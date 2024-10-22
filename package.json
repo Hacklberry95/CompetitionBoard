@@ -1,21 +1,29 @@
 {
   "name": "tournamentbracket",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "A desktop app for managing and tracking tournament brackets.",
+  "main": "electron/electron.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "npm run electron-start",
+    "start-client": "cd client && npm start",
+    "start-server": "cd server && node server.js",
+    "electron-start": "BROWSER=none npm run start-client & wait-on http://localhost:3001 && electron .",
+    "build-electron": "electron-builder"
   },
-  "keywords": [],
-  "author": "",
+  "author": "Your Name",
   "license": "ISC",
-  "dependencies": {
-    "body-parser": "^1.20.3",
-    "cors": "^2.8.5",
-    "express": "^4.21.1",
-    "sqlite3": "^5.1.7"
-  },
   "devDependencies": {
-    "nodemon": "^3.1.7"
-  }
+    "electron": "^33.0.2",
+    "wait-on": "^8.0.1",
+    "electron-builder": "^25.1.8"
+  },
+  "dependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Hacklberry95/CompetitionBoard.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Hacklberry95/CompetitionBoard/issues"
+  },
+  "homepage": "https://github.com/Hacklberry95/CompetitionBoard#readme"
 }
