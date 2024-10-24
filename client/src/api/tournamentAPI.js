@@ -1,6 +1,5 @@
 import axios from "axios";
 
-// Use the correct API URL
 const API_URL = "http://localhost:5000/api/tournaments";
 
 const tournamentAPI = {

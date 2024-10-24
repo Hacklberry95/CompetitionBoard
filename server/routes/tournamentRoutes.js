@@ -12,7 +12,6 @@ router.post("/tournaments", (req, res) => {
   const { name, date, location } = req.body;
   const newTournament = new tournament(name, date, location);
   newTournament.save(db, (err) => {
-    // Pass db instance here
     if (err) {
       return res
         .status(500)
@@ -27,7 +26,6 @@ router.post("/tournaments", (req, res) => {
 // Get all tournaments
 router.get("/tournaments", (req, res) => {
   tournament.findAll(db, (err, tournaments) => {
-    // Pass db instance here
     if (err) {
       return res
         .status(500)
@@ -41,7 +39,6 @@ router.get("/tournaments", (req, res) => {
 router.get("/tournaments/:id", (req, res) => {
   const tournamentId = req.params.id;
   tournament.findById(db, tournamentId, (err, tournament) => {
-    // Pass db instance here
     if (err) {
       return res
         .status(500)
@@ -56,7 +53,6 @@ router.put("/tournaments/:id", (req, res) => {
   const tournamentId = req.params.id;
   const { name, date, location } = req.body;
   tournament.update(db, tournamentId, { name, date, location }, (err) => {
-    // Pass db instance here
     if (err) {
       return res
         .status(500)
@@ -70,7 +66,6 @@ router.put("/tournaments/:id", (req, res) => {
 router.delete("/tournaments/:id", (req, res) => {
   const tournamentId = req.params.id;
   tournament.delete(db, tournamentId, (err) => {
-    // Pass db instance here
     if (err) {
       return res
         .status(500)

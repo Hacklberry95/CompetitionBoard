@@ -1,34 +1,32 @@
-import React, { useEffect, useState } from "react";
-import tournamentAPI from "../src/api/tournamentAPI";
+import React from "react";
+import Header from "./components/Header";
+import SidebarMenu from "./components/SideBar";
+import RulePage from "./pages/RulePage";
+import HomePage from "./pages/HomePage";
+import "./styles/App.css";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 
-const TournamentList = () => {
-  const [tournaments, setTournaments] = useState([]);
-
-  useEffect(() => {
-    const fetchTournaments = async () => {
-      try {
-        const data = await tournamentAPI.getAllTournaments();
-        setTournaments(data);
-      } catch (error) {
-        console.error("Error fetching tournaments:", error);
-      }
-    };
-
-    fetchTournaments();
-  }, []);
-
+const App = () => {
   return (
-    <div>
-      <h1>Tournaments</h1>
-      <ul>
-        {tournaments.map((tournament) => (
-          <li key={tournament.id}>
-            {tournament.name} - {tournament.date}
-          </li>
-        ))}
-      </ul>
-    </div>
+    <Router>
+      <div className="app-container">
+        <Header />
+        <div className="main-content">
+          {/* Sidebar is always displayed on the left */}
+          <SidebarMenu />
+
+          {/* The routed content will be displayed here */}
+          <div className="content-area">
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/rules" element={<RulePage />} />
+              {/* Add more routes as needed */}
+            </Routes>
+          </div>
+        </div>
+      </div>
+    </Router>
   );
 };
 
-export default TournamentList;
+export default App;

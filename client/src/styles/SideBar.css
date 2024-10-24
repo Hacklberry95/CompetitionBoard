@@ -1,0 +1,13 @@
+.sidebar-container {
+  width: 250px; /* Adjust as needed */
+  height: 80vh; /* Full height of the viewport */
+  overflow-y: auto; /* Enable vertical scrolling */
+  background-color: #f4f4f4; /* Background color */
+  position: relative; /* Keep sidebar fixed while scrolling */
+  left: 0; /* Align to the left */
+  top: 0; /* Align to the top */
+}
+
+.sidebar-content {
+  padding: 20px; /* Some padding for the content inside the sidebar */
+}

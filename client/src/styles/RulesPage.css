@@ -1,0 +1,24 @@
+.rules-container {
+  padding: 20px;
+  background-color: #f0f0f0;
+}
+
+.rules-list {
+  list-style-type: none;
+  padding: 0;
+}
+
+.rules-list li {
+  margin-bottom: 10px;
+}
+
+.rules-link {
+  text-decoration: none;
+  color: #007bff;
+  font-weight: bold;
+}
+
+.rules-link:hover {
+  color: #0056b3;
+  text-decoration: underline;
+}
