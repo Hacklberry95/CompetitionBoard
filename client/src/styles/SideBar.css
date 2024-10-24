@@ -6,6 +6,7 @@
   position: relative; /* Keep sidebar fixed while scrolling */
   left: 0; /* Align to the left */
   top: 0; /* Align to the top */
+  z-index: 1;
 }
 
 .sidebar-content {
