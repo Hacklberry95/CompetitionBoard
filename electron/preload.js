@@ -1,7 +1,11 @@
-const { contextBridge, ipcRenderer } = require('electron');
+window.addEventListener("DOMContentLoaded", () => {
+  // You can expose certain features to the renderer process here
+  const { contextBridge } = require("electron");
 
-// Expose methods to the frontend
-contextBridge.exposeInMainWorld('api', {
-  send: (channel, data) => ipcRenderer.send(channel, data),
-  receive: (channel, func) => ipcRenderer.on(channel, (event, ...args) => func(...args))
+  contextBridge.exposeInMainWorld("electron", {
+    // Example: expose some API
+    doSomething: () => {
+      console.log("Doing something...");
+    },
+  });
 });

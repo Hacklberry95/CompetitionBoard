@@ -1,16 +1,23 @@
 const express = require('express');
 const cors = require('cors');
-const bodyParser = require('body-parser');
 const sqlite3 = require('sqlite3').verbose();
 const app = express();
-const port = 5000; // Change port if needed
+const path = require('path');
+const port = 5000;
+
+// Import Models
+const User = require('./models/User');
+const Tournament = require('./models/Tournament');
+const Match = require('./models/Match');
+const Bracket = require('./models/Bracket');
 
 // Middleware
 app.use(cors());
-app.use(bodyParser.json());
+app.use(express.json());
 
-// Connect to SQLite database
-const db = new sqlite3.Database('./server/db/tournament.db', (err) => {
+// Use the correct database path
+const dbPath = path.resolve(__dirname, '../db/tournament.db');
+const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
         console.error('Error opening database:', err.message);
     } else {
@@ -18,24 +25,23 @@ const db = new sqlite3.Database('./server/db/tournament.db', (err) => {
     }
 });
 
-// Basic API route
-app.get('/api', (req, res) => {
-    res.json({ message: 'Welcome to the Tournament API!' });
-});
+// Initialize database tables
+User.createTable(db);
+Tournament.createTable(db);
+Match.createTable(db);
+Bracket.createTable(db);
 
-// Example API to fetch competitors from the DB
-app.get('/api/competitors', (req, res) => {
-    db.all('SELECT * FROM competitors', [], (err, rows) => {
-        if (err) {
-            res.status(400).json({ error: err.message });
-            return;
-        }
-        res.json({
-            message: 'Success',
-            data: rows
-        });
-    });
-});
+// Import API routes
+const userRoutes = require('./routes/userRoutes');
+const tournamentRoutes = require('./routes/tournamentRoutes');
+const matchRoutes = require('./routes/matchRoutes');
+const bracketRoutes = require('./routes/bracketRoutes');
+
+// Use API routes
+app.use('/api', userRoutes);
+app.use('/api', tournamentRoutes);
+app.use('/api', matchRoutes);
+app.use('/api', bracketRoutes);
 
 // Start the server
 app.listen(port, () => {

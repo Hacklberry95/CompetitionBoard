@@ -1,61 +1,50 @@
-const { app, BrowserWindow } = require('electron');
-const { spawn } = require('child_process');
-const path = require('path');
+const { app, BrowserWindow } = require("electron");
+const { spawn } = require("child_process");
+const path = require("path");
 
 let mainWindow;
 let reactProcess;
 
 function createWindow() {
+  console.log("Creating Electron window...");
   mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'), // Optional
       nodeIntegration: true,
       contextIsolation: false,
     },
   });
 
-  // Start the React app
-  reactProcess = spawn('npm', ['start'], { cwd: path.join(__dirname, '..', 'client') });
+  // Attempt to load React app after a delay to ensure it has started
+  setTimeout(() => {
+    mainWindow
+      .loadURL("http://localhost:3000")
+      .then(() => console.log("Loaded React app in Electron window."))
+      .catch((err) =>
+        console.error("Failed to load URL in Electron window:", err)
+      );
+  }, 1000); // Wait for 2 seconds
 
-  // Load React app
-  mainWindow.loadURL('http://localhost:3001');
-
-  
-  // Handle the React app's output
-  reactProcess.stdout.on('data', (data) => {
-    console.log(`React: ${data}`);
-  });
-
-  reactProcess.stderr.on('data', (data) => {
-    console.error(`React error: ${data}`);
-  });
-
-  mainWindow.on('closed', () => {
-    mainWindow = null;
-  });
-
-  // When the main window is closed, kill the React process
-  mainWindow.on('closed', () => {
+  mainWindow.on("closed", () => {
     if (reactProcess) {
-        reactProcess.kill('SIGINT'); // Use SIGINT to gracefully terminate
+      reactProcess.kill("SIGINT");
     }
     mainWindow = null;
-    app.quit(); // Ensure the entire app quits
-});
-
+  });
 }
 
-app.on('ready', createWindow);
+app.on("ready", () => {
+  console.log("Electron app is ready");
+  createWindow();
+});
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
+app.on("window-all-closed", () => {
+  if (process.platform !== "darwin") {
     app.quit();
   }
 });
-
-app.on('activate', () => {
+app.on("activate", () => {
   if (mainWindow === null) {
     createWindow();
   }

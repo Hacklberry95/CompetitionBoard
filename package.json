@@ -5,19 +5,19 @@
   "main": "electron/electron.js",
   "scripts": {
     "start": "npm run electron-start",
-    "start-client": "cd client && npm start",
+    "start-client": "cd client && BROWSER=none npm start ",
     "start-server": "cd server && node server.js",
-    "electron-start": "BROWSER=none npm run start-client & wait-on http://localhost:3001 && electron .",
+    "electron-start": "concurrently \"npm run start-client\" \"npm run start-server\" \" wait-on -v http://localhost:3000\" \"electron .\"",
     "build-electron": "electron-builder"
   },
   "author": "Your Name",
   "license": "ISC",
   "devDependencies": {
+    "concurrently": "^7.6.0",
     "electron": "^33.0.2",
-    "wait-on": "^8.0.1",
-    "electron-builder": "^25.1.8"
+    "electron-builder": "^25.1.8",
+    "wait-on": "^8.0.1"
   },
-  "dependencies": {},
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Hacklberry95/CompetitionBoard.git"
