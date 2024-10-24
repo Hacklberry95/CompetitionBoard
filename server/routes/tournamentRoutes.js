@@ -1,12 +1,18 @@
 const express = require("express");
 const router = express.Router();
-const Tournament = require("../models/Tournament");
+const tournament = require("../models/tournament");
+const path = require("path");
+
+// Use the correct database path
+const dbPath = path.join(__dirname, "../../db/tournament.db");
+const db = new (require("sqlite3").verbose().Database)(dbPath);
 
 // Create a new tournament
 router.post("/tournaments", (req, res) => {
   const { name, date, location } = req.body;
-  const newTournament = new Tournament(name, date, location);
-  newTournament.save((err) => {
+  const newTournament = new tournament(name, date, location);
+  newTournament.save(db, (err) => {
+    // Pass db instance here
     if (err) {
       return res
         .status(500)
@@ -20,7 +26,8 @@ router.post("/tournaments", (req, res) => {
 
 // Get all tournaments
 router.get("/tournaments", (req, res) => {
-  Tournament.findAll((err, tournaments) => {
+  tournament.findAll(db, (err, tournaments) => {
+    // Pass db instance here
     if (err) {
       return res
         .status(500)
@@ -33,7 +40,8 @@ router.get("/tournaments", (req, res) => {
 // Get a single tournament by ID
 router.get("/tournaments/:id", (req, res) => {
   const tournamentId = req.params.id;
-  Tournament.findById(tournamentId, (err, tournament) => {
+  tournament.findById(db, tournamentId, (err, tournament) => {
+    // Pass db instance here
     if (err) {
       return res
         .status(500)
@@ -47,7 +55,8 @@ router.get("/tournaments/:id", (req, res) => {
 router.put("/tournaments/:id", (req, res) => {
   const tournamentId = req.params.id;
   const { name, date, location } = req.body;
-  Tournament.update(tournamentId, { name, date, location }, (err) => {
+  tournament.update(db, tournamentId, { name, date, location }, (err) => {
+    // Pass db instance here
     if (err) {
       return res
         .status(500)
@@ -60,7 +69,8 @@ router.put("/tournaments/:id", (req, res) => {
 // Delete a tournament by ID
 router.delete("/tournaments/:id", (req, res) => {
   const tournamentId = req.params.id;
-  Tournament.delete(tournamentId, (err) => {
+  tournament.delete(db, tournamentId, (err) => {
+    // Pass db instance here
     if (err) {
       return res
         .status(500)

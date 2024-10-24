@@ -1,7 +1,7 @@
 import axios from "axios";
 
 // Use the correct API URL
-const API_URL = "http://localhost:5000/tournaments"; // Update to match your server's API structure
+const API_URL = "http://localhost:5000/api/tournaments";
 
 const tournamentAPI = {
   createTournament: async (tournamentData) => {
