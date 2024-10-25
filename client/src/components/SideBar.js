@@ -3,8 +3,11 @@ import { Sidebar, Menu, MenuItem, SubMenu } from "react-pro-sidebar";
 import { Link } from "react-router-dom";
 import "../styles/SideBar.css";
 import CalendarModal from "./CalendarModal";
+import RulesModal from "./RulesModal";
+
 const SidebarMenu = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
 
   const openModal = () => {
     setIsModalOpen(true);
@@ -13,7 +16,13 @@ const SidebarMenu = () => {
   const closeModal = () => {
     setIsModalOpen(false);
   };
+  const openRulesModal = () => {
+    setIsRulesModalOpen(true);
+  };
 
+  const closeRulesModal = () => {
+    setIsRulesModalOpen(false);
+  };
   return (
     <Sidebar className="sidebar-container">
       <Menu>
@@ -69,10 +78,11 @@ const SidebarMenu = () => {
             </SubMenu>
           </SubMenu>
         </SubMenu>
-        <MenuItem component={<Link to="/rules">Rules</Link>}>Rules</MenuItem>
+        <MenuItem onClick={openRulesModal}>Rules</MenuItem>
         <MenuItem onClick={openModal}>Calendar</MenuItem>
       </Menu>
       <CalendarModal isOpen={isModalOpen} onRequestClose={closeModal} />
+      <RulesModal isOpen={isRulesModalOpen} onRequestClose={closeRulesModal} />
     </Sidebar>
   );
 };

@@ -1,0 +1,30 @@
+/* styles/RulesModal.css */
+.rules-modal {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  max-width: 30vh;
+  margin: auto;
+  z-index: 10;
+}
+
+.rules-overlay {
+  background: rgba(0, 0, 0, 0.7);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9;
+}
+
+.rules-list {
+  list-style-type: none;
+  padding: 0;
+  margin: 5px;
+}
+
+.rules-link {
+  text-decoration: none;
+  color: blue;
+}
