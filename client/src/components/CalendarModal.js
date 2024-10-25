@@ -6,7 +6,7 @@ import "react-calendar/dist/Calendar.css";
 import "../styles/CalendarModal.css";
 
 // Set app element for accessibility
-Modal.setAppElement("#root"); // Make sure this matches your main app element
+Modal.setAppElement("#root");
 
 const CalendarModal = ({ isOpen, onRequestClose }) => {
   const [date, setDate] = useState(new Date());
@@ -21,14 +21,16 @@ const CalendarModal = ({ isOpen, onRequestClose }) => {
       isOpen={isOpen}
       onRequestClose={onRequestClose}
       contentLabel="Calendar"
-      className="calendar-modal" // Add custom class for styling
-      overlayClassName="calendar-overlay" // Add overlay class for styling
+      className="calendar-modal"
+      overlayClassName="calendar-overlay"
     >
       <h2>Select a Date</h2>
-      <Calendar onChange={handleDateChange} value={date} />
-      <div className="selected-date">
-        <h3>Selected Date: {date.toDateString()}</h3>
-      </div>
+      <Calendar
+        onChange={handleDateChange}
+        value={date}
+        minDate={new Date(2024, 0, 1)}
+        showWeekNumbers={true}
+      />
       <button onClick={onRequestClose}>Close</button>
     </Modal>
   );

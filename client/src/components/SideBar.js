@@ -13,6 +13,7 @@ const SidebarMenu = () => {
   const closeModal = () => {
     setIsModalOpen(false);
   };
+
   return (
     <Sidebar className="sidebar-container">
       <Menu>

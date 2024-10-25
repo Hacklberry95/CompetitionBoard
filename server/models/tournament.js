@@ -1,5 +1,5 @@
 // models/Tournament.js
-class tournament {
+class Tournament {
   static createTable(db) {
     const query = `
             CREATE TABLE IF NOT EXISTS tournaments (
@@ -57,4 +57,4 @@ class tournament {
   }
 }
 
-module.exports = tournament;
+module.exports = Tournament;

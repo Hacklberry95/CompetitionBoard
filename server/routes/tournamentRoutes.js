@@ -1,17 +1,17 @@
+// routes/tournamentRoutes.js
 const express = require("express");
 const router = express.Router();
-const tournament = require("../models/tournament");
+const Tournament = require("../models/tournament");
 const path = require("path");
 
-// Use the correct database path
 const dbPath = path.join(__dirname, "../../db/tournament.db");
 const db = new (require("sqlite3").verbose().Database)(dbPath);
 
 // Create a new tournament
 router.post("/tournaments", (req, res) => {
   const { name, date, location } = req.body;
-  const newTournament = new tournament(name, date, location);
-  newTournament.save(db, (err) => {
+  const newTournament = new Tournament(name, date, location);
+  newTournament.save(db, (err, tournamentId) => {
     if (err) {
       return res
         .status(500)
@@ -19,13 +19,13 @@ router.post("/tournaments", (req, res) => {
     }
     return res
       .status(201)
-      .json({ message: "Tournament created successfully!" });
+      .json({ message: "Tournament created successfully!", id: tournamentId });
   });
 });
 
 // Get all tournaments
 router.get("/tournaments", (req, res) => {
-  tournament.findAll(db, (err, tournaments) => {
+  Tournament.findAll(db, (err, tournaments) => {
     if (err) {
       return res
         .status(500)
@@ -35,10 +35,10 @@ router.get("/tournaments", (req, res) => {
   });
 });
 
-// Get a single tournament by ID
+// Get a tournament by ID
 router.get("/tournaments/:id", (req, res) => {
-  const tournamentId = req.params.id;
-  tournament.findById(db, tournamentId, (err, tournament) => {
+  const { id } = req.params;
+  Tournament.findById(db, id, (err, tournament) => {
     if (err) {
       return res
         .status(500)
@@ -48,11 +48,11 @@ router.get("/tournaments/:id", (req, res) => {
   });
 });
 
-// Update a tournament by ID
+// Update a tournament
 router.put("/tournaments/:id", (req, res) => {
-  const tournamentId = req.params.id;
+  const { id } = req.params;
   const { name, date, location } = req.body;
-  tournament.update(db, tournamentId, { name, date, location }, (err) => {
+  Tournament.update(db, id, { name, date, location }, (err) => {
     if (err) {
       return res
         .status(500)
@@ -62,10 +62,10 @@ router.put("/tournaments/:id", (req, res) => {
   });
 });
 
-// Delete a tournament by ID
+// Delete a tournament
 router.delete("/tournaments/:id", (req, res) => {
-  const tournamentId = req.params.id;
-  tournament.delete(db, tournamentId, (err) => {
+  const { id } = req.params;
+  Tournament.delete(db, id, (err) => {
     if (err) {
       return res
         .status(500)

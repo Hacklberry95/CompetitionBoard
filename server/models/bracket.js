@@ -1,13 +1,13 @@
-class bracket {
+// models/Bracket.js
+class Bracket {
   static createTable(db) {
     const query = `
-            CREATE TABLE IF NOT EXISTS brackets (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                tournamentId INTEGER,
-                matches TEXT,  -- Store matches as a serialized structure (e.g., JSON)
-                FOREIGN KEY (tournamentId) REFERENCES tournaments(id)
-            );
-        `;
+      CREATE TABLE IF NOT EXISTS brackets (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        tournamentId INTEGER,
+        FOREIGN KEY (tournamentId) REFERENCES tournaments(id)
+      );
+    `;
     db.run(query, (err) => {
       if (err) {
         console.error("Error creating brackets table:", err.message);
@@ -17,33 +17,69 @@ class bracket {
     });
   }
 
-  constructor(tournamentId, matches) {
+  constructor(tournamentId) {
     this.tournamentId = tournamentId;
-    this.matches = JSON.stringify(matches); // Serialize matches as a JSON string
   }
 
   save(db, callback) {
     const query = `
-            INSERT INTO brackets (tournamentId, matches)
-            VALUES (?, ?);
-        `;
-    db.run(query, [this.tournamentId, this.matches], callback);
+      INSERT INTO brackets (tournamentId)
+      VALUES (?);
+    `;
+    db.run(query, [this.tournamentId], function (err) {
+      callback(err, this.lastID);
+    });
+  }
+
+  static linkMatches(db, bracketId, matchIds, callback) {
+    const query = `
+      INSERT INTO bracket_matches (bracketId, matchId)
+      VALUES (?, ?);
+    `;
+    const insertPromises = matchIds.map((matchId) => {
+      return new Promise((resolve, reject) => {
+        db.run(query, [bracketId, matchId], (err) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+    });
+    Promise.all(insertPromises)
+      .then(() => callback(null))
+      .catch(callback);
   }
 
   static findByTournamentId(db, tournamentId, callback) {
     const query = `
-            SELECT * FROM brackets WHERE tournamentId = ?;
-        `;
+      SELECT * FROM brackets WHERE tournamentId = ?;
+    `;
     db.get(query, [tournamentId], (err, row) => {
       if (err) {
         return callback(err);
       }
-      if (row) {
-        row.matches = JSON.parse(row.matches); // Deserialize matches
-      }
       return callback(null, row);
+    });
+  }
+
+  // Update a bracket
+  static update(db, id, { tournamentId }, callback) {
+    const query = `
+      UPDATE brackets SET tournamentId = ? WHERE id = ?;
+    `;
+    db.run(query, [tournamentId, id], (err) => {
+      callback(err);
+    });
+  }
+
+  // Delete a bracket
+  static delete(db, id, callback) {
+    const query = `
+      DELETE FROM brackets WHERE id = ?;
+    `;
+    db.run(query, [id], (err) => {
+      callback(err);
     });
   }
 }
 
-module.exports = bracket;
+module.exports = Bracket;

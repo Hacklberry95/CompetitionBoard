@@ -6,9 +6,10 @@ const path = require("path");
 const port = 5000;
 
 // Importing Models
-const tournament = require("./models/tournament");
-const match = require("./models/match");
-const bracket = require("./models/bracket");
+const Tournament = require("./models/tournament");
+const Match = require("./models/match");
+const Bracket = require("./models/bracket");
+const BracketMatches = require("./models/bracket_matches");
 
 // Middleware
 app.use(cors());
@@ -22,9 +23,10 @@ const db = new sqlite3.Database(dbPath, (err) => {
     console.log("Connected to the tournament database.");
 
     // Initializing database
-    tournament.createTable(db);
-    match.createTable(db);
-    bracket.createTable(db);
+    Tournament.createTable(db);
+    Match.createTable(db);
+    Bracket.createTable(db);
+    BracketMatches.createTable(db);
   }
 });
 

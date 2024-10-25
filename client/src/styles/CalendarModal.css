@@ -1,6 +1,5 @@
 /* styles/App.css or styles/SideBar.css */
 .calendar-modal {
-  /* Style the modal */
   background: white;
   border-radius: 8px;
   padding: 20px;
@@ -10,7 +9,6 @@
 }
 
 .calendar-overlay {
-  /* Style the overlay */
   background: rgba(0, 0, 0, 0.7);
   position: fixed;
   top: 0;

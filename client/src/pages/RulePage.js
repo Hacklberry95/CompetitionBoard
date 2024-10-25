@@ -9,7 +9,7 @@ const RulesPage = () => {
         <li>
           <a
             href="public/2022-WAF-Rules.pdf"
-            download="Rules1.pdf"
+            download="2022-WAF-Rules.pdf"
             className="rules-link"
           >
             Download WAF Rules
@@ -18,7 +18,7 @@ const RulesPage = () => {
         <li>
           <a
             href="public/IFA-rules.pdf"
-            download="Rules2.pdf"
+            download="IFA-rules.pdf"
             className="rules-link"
           >
             Download IFA Rules

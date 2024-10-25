@@ -16,7 +16,6 @@ function createWindow() {
     },
   });
 
-  // Attempt to load React app after a delay to ensure it has started
   setTimeout(() => {
     mainWindow
       .loadURL("http://localhost:3000")
@@ -24,7 +23,7 @@ function createWindow() {
       .catch((err) =>
         console.error("Failed to load URL in Electron window:", err)
       );
-  }, 1000); // Wait for 2 seconds
+  }, 1500);
 
   mainWindow.on("closed", () => {
     if (reactProcess) {
