@@ -1,0 +1,82 @@
+/* Container for the tournaments section */
+.view-tournaments {
+  max-width: 80vh;
+  margin: 20px auto;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background-color: #fafafa;
+}
+
+/* Header for the tournaments section */
+.view-tournaments h2 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+/* Create Tournament Form Styling */
+.create-tournament-form {
+  margin-bottom: 30px;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background-color: #f0f8ff;
+}
+
+.create-tournament-form h3 {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.create-tournament-form input[type="text"],
+.create-tournament-form input[type="date"] {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 15px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+}
+
+.create-tournament-form button {
+  width: 100%;
+  padding: 10px;
+  font-size: 16px;
+  font-weight: bold;
+  color: #fff;
+  background-color: #007bff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.create-tournament-form button:hover {
+  background-color: #0056b3;
+}
+
+/* Tournament Table Styling */
+.view-tournaments table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.view-tournaments th,
+.view-tournaments td {
+  padding: 12px;
+  border: 1px solid #ddd;
+  text-align: left;
+}
+
+.view-tournaments th {
+  background-color: #007bff;
+  color: white;
+}
+
+.view-tournaments tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.view-tournaments td[colspan="4"] {
+  text-align: center;
+  color: #666;
+  padding: 20px;
+}

@@ -1,9 +1,8 @@
 import React, { useState } from "react";
 import { Sidebar, Menu, MenuItem, SubMenu } from "react-pro-sidebar";
-import { Link } from "react-router-dom";
-import "../styles/SideBar.css";
-import CalendarModal from "./CalendarModal";
-import RulesModal from "./RulesModal";
+import "../../styles/SideBar.css";
+import CalendarModal from "../modals/CalendarModal";
+import RulesModal from "../modals/RulesModal";
 
 const SidebarMenu = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);

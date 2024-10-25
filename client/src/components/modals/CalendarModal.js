@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import Modal from "react-modal";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
-import "../styles/CalendarModal.css";
+import "../../styles/CalendarModal.css";
 
 // Set app element for accessibility
 Modal.setAppElement("#root");

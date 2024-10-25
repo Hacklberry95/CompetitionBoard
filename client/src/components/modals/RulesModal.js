@@ -1,9 +1,20 @@
+// src/components/RulesModal.js
 import React from "react";
-import "../styles/RulesPage.css";
+import Modal from "react-modal";
+import "../../styles/RulesModal.css"; // Create this CSS file for specific styles if needed
 
-const RulesPage = () => {
+// Set app element for accessibility
+Modal.setAppElement("#root");
+
+const RulesModal = ({ isOpen, onRequestClose }) => {
   return (
-    <div className="rules-page">
+    <Modal
+      isOpen={isOpen}
+      onRequestClose={onRequestClose}
+      contentLabel="Rules"
+      className="rules-modal"
+      overlayClassName="rules-overlay"
+    >
       <h2>Rules</h2>
       <ul className="rules-list">
         <li>
@@ -25,8 +36,9 @@ const RulesPage = () => {
           </a>
         </li>
       </ul>
-    </div>
+      <button onClick={onRequestClose}>Close</button>
+    </Modal>
   );
 };
 
-export default RulesPage;
+export default RulesModal;
