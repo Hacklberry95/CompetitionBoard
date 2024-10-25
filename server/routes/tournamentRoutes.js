@@ -2,6 +2,7 @@
 const express = require("express");
 const router = express.Router();
 const Tournament = require("../models/tournament");
+const contestant = require("../models/contestant");
 const path = require("path");
 
 const dbPath = path.join(__dirname, "../../db/tournament.db");
@@ -72,6 +73,22 @@ router.delete("/tournaments/:id", (req, res) => {
         .json({ message: "Error deleting tournament", error: err });
     }
     return res.json({ message: "Tournament deleted successfully!" });
+  });
+});
+
+// Add a contestant to a tournament
+router.post("/tournaments/:tournamentId/contestants", (req, res) => {
+  const { tournamentId } = req.params;
+  const { fullName } = req.body;
+
+  const newContestant = new contestant(fullName, tournamentId);
+  newContestant.save(db, (err) => {
+    if (err) {
+      return res
+        .status(500)
+        .json({ message: "Error adding contestant", error: err });
+    }
+    return res.status(201).json({ message: "Contestant added successfully!" });
   });
 });
 

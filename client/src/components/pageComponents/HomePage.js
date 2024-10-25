@@ -5,11 +5,11 @@ import ViewTournamentsTab from "../tabs/ViewTournamentsTab";
 import "../../styles/HomePage.css";
 
 const Homepage = () => {
-  const [activeTab, setActiveTab] = useState("create");
+  const [activeTab, setActiveTab] = useState("viewTournaments");
 
   const renderTabContent = () => {
     switch (activeTab) {
-      case "bracket":
+      case "bracketViewer":
         return <ViewBracketTab />;
       case "viewTournaments":
         return <ViewTournamentsTab />;
@@ -21,10 +21,10 @@ const Homepage = () => {
   return (
     <div className="homepage">
       <nav>
-        <button onClick={() => setActiveTab("bracket")}>Bracket</button>
         <button onClick={() => setActiveTab("viewTournaments")}>
           Tournaments
         </button>
+        <button onClick={() => setActiveTab("bracketViewer")}>Bracket</button>
       </nav>
       <div className="tab-content">{renderTabContent()}</div>
     </div>

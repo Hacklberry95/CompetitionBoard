@@ -1,5 +1,6 @@
 // ViewBracketTab.js
 import React, { useEffect, useState } from "react";
+import { Bracket, RoundProps } from "react-brackets";
 // import bracketAPI from "../../api/bracketAPI";
 
 const ViewBracketTab = () => {

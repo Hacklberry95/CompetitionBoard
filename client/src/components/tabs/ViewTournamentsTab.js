@@ -1,4 +1,3 @@
-// src/components/ViewTournamentsTab.js
 import React, { useEffect, useState } from "react";
 import tournamentAPI from "../../api/tournamentAPI";
 import "../../styles/ViewTournamentsTab.css";
@@ -11,8 +10,11 @@ const ViewTournamentsTab = () => {
     date: "",
     location: "",
   });
+  const [contestantData, setContestantData] = useState({
+    fullName: "",
+    tournamentId: "",
+  });
 
-  // Fetch tournaments from the API
   useEffect(() => {
     fetchTournaments();
   }, []);
@@ -29,53 +31,79 @@ const ViewTournamentsTab = () => {
     }
   };
 
-  const handleChange = (e) => {
+  const handleTournamentChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleSubmit = async (e) => {
+  const handleTournamentSubmit = async (e) => {
     e.preventDefault();
     try {
       await tournamentAPI.createTournament(formData);
       alert("Tournament created successfully!");
       setFormData({ name: "", date: "", location: "" });
-      fetchTournaments(); // Refresh the tournament list
+      fetchTournaments();
     } catch (error) {
       console.error("Error creating tournament:", error);
     }
   };
 
+  const handleContestantChange = (e) => {
+    const { name, value } = e.target;
+    setContestantData({ ...contestantData, [name]: value });
+  };
+
+  const handleContestantSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      if (!contestantData.tournamentId) {
+        alert("Please select a tournament");
+        return;
+      }
+      await tournamentAPI.addContestantToTournament(
+        contestantData.tournamentId,
+        {
+          fullName: contestantData.fullName,
+        }
+      );
+      alert("Contestant added successfully!");
+      setContestantData({ fullName: "", tournamentId: "" });
+    } catch (error) {
+      console.error("Error adding contestant:", error);
+    }
+  };
+
   return (
     <div className="view-tournaments">
-      {/* Tournament Creation Form */}
-      <form onSubmit={handleSubmit} className="create-tournament-form">
+      <form
+        onSubmit={handleTournamentSubmit}
+        className="create-tournament-form"
+      >
         <h3>Create a New Tournament</h3>
         <input
           type="text"
           name="name"
           placeholder="Tournament Name"
           value={formData.name}
-          onChange={handleChange}
+          onChange={handleTournamentChange}
         />
         <input
           type="date"
           name="date"
           placeholder="Tournament Date"
           value={formData.date}
-          onChange={handleChange}
+          onChange={handleTournamentChange}
         />
         <input
           type="text"
           name="location"
           placeholder="Location"
           value={formData.location}
-          onChange={handleChange}
+          onChange={handleTournamentChange}
         />
         <button type="submit">Create Tournament</button>
       </form>
 
-      {/* Tournament List Table */}
       <h2>All Tournaments</h2>
       {loading ? (
         <p>Loading tournaments...</p>
@@ -83,7 +111,6 @@ const ViewTournamentsTab = () => {
         <table>
           <thead>
             <tr>
-              <th>ID</th>
               <th>Name</th>
               <th>Date</th>
               <th>Location</th>
@@ -93,7 +120,6 @@ const ViewTournamentsTab = () => {
             {tournaments.length > 0 ? (
               tournaments.map((tournament) => (
                 <tr key={tournament.id}>
-                  <td>{tournament.id}</td>
                   <td>{tournament.name}</td>
                   <td>{new Date(tournament.date).toLocaleDateString()}</td>
                   <td>{tournament.location}</td>
@@ -101,12 +127,36 @@ const ViewTournamentsTab = () => {
               ))
             ) : (
               <tr>
-                <td colSpan="4">No tournaments found.</td>
+                <td colSpan="3">No tournaments found.</td>
               </tr>
             )}
           </tbody>
         </table>
       )}
+
+      <form onSubmit={handleContestantSubmit} className="add-contestant-form">
+        <h3>Add Contestant to Tournament</h3>
+        <select
+          name="tournamentId"
+          value={contestantData.tournamentId}
+          onChange={handleContestantChange}
+        >
+          <option value="">Select Tournament</option>
+          {tournaments.map((tournament) => (
+            <option key={tournament.id} value={tournament.id}>
+              {tournament.name}
+            </option>
+          ))}
+        </select>
+        <input
+          type="text"
+          name="fullName"
+          placeholder="Contestant Full Name"
+          value={contestantData.fullName}
+          onChange={handleContestantChange}
+        />
+        <button type="submit">Add Contestant</button>
+      </form>
     </div>
   );
 };

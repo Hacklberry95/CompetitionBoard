@@ -25,5 +25,8 @@
   "bugs": {
     "url": "https://github.com/Hacklberry95/CompetitionBoard/issues"
   },
-  "homepage": "https://github.com/Hacklberry95/CompetitionBoard#readme"
+  "homepage": "https://github.com/Hacklberry95/CompetitionBoard#readme",
+  "dependencies": {
+    "again": "^0.0.1"
+  }
 }

@@ -43,6 +43,18 @@ const tournamentAPI = {
       throw error.response.data;
     }
   },
+
+  addContestantToTournament: async (tournamentId, contestantData) => {
+    try {
+      const response = await axios.post(
+        `${API_URL}/${tournamentId}/contestants`,
+        contestantData
+      );
+      return response.data;
+    } catch (error) {
+      throw error.response.data;
+    }
+  },
 };
 
 export default tournamentAPI;
