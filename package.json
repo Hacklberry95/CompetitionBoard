@@ -6,7 +6,7 @@
   "scripts": {
     "start": "npm run electron-start",
     "start-client": "cd client && BROWSER=none npm start ",
-    "start-server": "cd server && node server.js",
+    "start-server": "cd server && nodemon server.js",
     "electron-start": "concurrently \"npm run start-client\" \"npm run start-server\" \" wait-on -v http://localhost:3000\" \"electron .\"",
     "build-electron": "electron-builder"
   },

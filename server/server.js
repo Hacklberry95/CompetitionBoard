@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const sqlite3 = require("sqlite3").verbose();
 const app = express();
+const http = require("http");
 const path = require("path");
 const port = 5000;
 
@@ -29,14 +30,14 @@ const db = new sqlite3.Database(dbPath, (err) => {
         console.error("Error enabling foreign keys:", pragmaErr.message);
       } else {
         console.log("Foreign keys are enabled.");
-      }
 
-      // Initializing database tables after enabling foreign keys
-      Tournament.createTable(db);
-      Match.createTable(db);
-      Bracket.createTable(db);
-      BracketMatches.createTable(db);
-      Contestant.createTable(db);
+        // Initializing database tables after enabling foreign keys
+        Tournament.createTable(db);
+        Match.createTable(db);
+        Bracket.createTable(db);
+        BracketMatches.createTable(db);
+        Contestant.createTable(db);
+      }
     });
   }
 });
@@ -54,6 +55,29 @@ app.use("/api", bracketRoutes);
 app.use("/api", contestantRoutes);
 
 // Starting the server
-app.listen(port, () => {
+const server = app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
+
+// Graceful shutdown
+const shutdown = () => {
+  console.log("Shutting down the server...");
+
+  // Close the database connection
+  db.close((err) => {
+    if (err) {
+      console.error("Error closing database:", err.message);
+    } else {
+      console.log("Database connection closed.");
+    }
+    // Close the server after database is closed
+    server.close(() => {
+      console.log("Server closed.");
+      process.exit(0);
+    });
+  });
+};
+
+// Listen for termination signals
+process.on("SIGINT", shutdown); // Ctrl+C
+process.on("SIGTERM", shutdown); // Kill command
