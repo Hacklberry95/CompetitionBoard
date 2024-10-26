@@ -3,8 +3,9 @@ import tournamentAPI from "../../api/tournamentAPI";
 import contestantsAPI from "../../api/contestantsAPI";
 import EditTournamentModal from "../modals/EditTournamentModal";
 import "../../styles/ViewTournamentsTab.css";
-import { Stack, IconButton } from "@mui/material";
+import { Stack, IconButton, Alert } from "@mui/material";
 import { EditNote, DeleteForever } from "@mui/icons-material";
+import { useAlert } from "../../context/AlertContext"; // Import useAlert
 
 const ViewTournamentsTab = () => {
   const [tournaments, setTournaments] = useState([]);
@@ -16,10 +17,26 @@ const ViewTournamentsTab = () => {
   });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTournament, setSelectedTournament] = useState(null);
+  const { showSnackbar } = useAlert();
 
   useEffect(() => {
     fetchTournaments();
   }, []);
+
+  // Refreshes the contestant list in the EditTounrmanet
+  const refreshTournament = async (tournamentId) => {
+    try {
+      const fullTournament = await tournamentAPI.getTournamentById(
+        tournamentId
+      );
+      const contestants = await contestantsAPI.getContestantsByTournamentId(
+        tournamentId
+      );
+      setSelectedTournament({ ...fullTournament, contestants });
+    } catch (error) {
+      console.error("Error refreshing tournament details:", error);
+    }
+  };
 
   const fetchTournaments = async () => {
     try {
@@ -28,6 +45,7 @@ const ViewTournamentsTab = () => {
       setTournaments(data);
     } catch (error) {
       console.error("Failed to fetch tournaments:", error);
+      showSnackbar("Failed to fetch tournaments.", "error");
     } finally {
       setLoading(false);
     }
@@ -37,11 +55,13 @@ const ViewTournamentsTab = () => {
     e.preventDefault();
     try {
       const newTournament = await tournamentAPI.createTournament(formData);
-      alert("Tournament created successfully!");
+      showSnackbar("Tournament created successfully!", "success");
+      fetchTournaments();
       setFormData({ name: "", date: "", location: "" });
       setTournaments([...tournaments, newTournament]);
     } catch (error) {
       console.error("Error creating tournament:", error);
+      showSnackbar("Failed to create tournament.", "error");
     }
   };
 
@@ -68,10 +88,11 @@ const ViewTournamentsTab = () => {
     if (confirmed) {
       try {
         await tournamentAPI.deleteTournament(tournament.id);
-        alert("Tournament deleted successfully!");
+        showSnackbar("Tournament deleted successfully!", "success");
         fetchTournaments(); // Refresh the list after deletion
       } catch (error) {
-        alert("Error while deleting tournament!");
+        console.error("Error deleting tournament:", error);
+        showSnackbar("Error while deleting tournament!", "error");
       }
     }
   };
@@ -87,26 +108,28 @@ const ViewTournamentsTab = () => {
         tournamentId,
         { fullName }
       );
-      alert("Contestant added successfully!");
+      showSnackbar("Contestant added successfully!", "success");
       setSelectedTournament((prev) => ({
         ...prev,
         contestants: [...prev.contestants, newContestant],
       }));
     } catch (error) {
       console.error("Error adding contestant:", error);
+      showSnackbar("Failed to add contestant.", "error");
     }
   };
 
   const handleRemoveContestant = async (tournamentId, contestantId) => {
     try {
       await contestantsAPI.deleteContestant(tournamentId, contestantId);
-      alert("Contestant removed successfully!");
+      showSnackbar("Contestant removed successfully!", "success");
       setSelectedTournament((prev) => ({
         ...prev,
         contestants: prev.contestants.filter((c) => c.id !== contestantId),
       }));
     } catch (error) {
       console.error("Error removing contestant:", error);
+      showSnackbar("Failed to remove contestant.", "error");
     }
   };
 
@@ -167,10 +190,7 @@ const ViewTournamentsTab = () => {
                     <Stack
                       spacing={2}
                       direction="row"
-                      sx={{
-                        justifyContent: "center",
-                        alignItems: "center",
-                      }}
+                      sx={{ justifyContent: "center", alignItems: "center" }}
                     >
                       <IconButton onClick={() => openModal(tournament)}>
                         <EditNote />
@@ -197,6 +217,7 @@ const ViewTournamentsTab = () => {
         onClose={closeModal}
         onAddContestant={handleAddContestant}
         onRemoveContestant={handleRemoveContestant}
+        refreshTournament={() => refreshTournament(selectedTournament.id)}
       />
     </div>
   );

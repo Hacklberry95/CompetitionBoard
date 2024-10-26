@@ -24,7 +24,7 @@ const Homepage = () => {
         <button onClick={() => setActiveTab("viewTournaments")}>
           Tournaments
         </button>
-        <button onClick={() => setActiveTab("bracketViewer")}>Bracket</button>
+        {/* <button onClick={() => setActiveTab("bracketViewer")}>Bracket</button> */}
       </nav>
       <div className="tab-content">{renderTabContent()}</div>
     </div>

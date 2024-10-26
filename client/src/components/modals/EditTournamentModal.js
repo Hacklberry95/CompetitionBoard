@@ -1,6 +1,8 @@
-// src/components/EditTournamentModal.js
 import React, { useState, useEffect } from "react";
 import "../../styles/EditTournamentModal.css";
+import { Stack, IconButton, Alert } from "@mui/material";
+import { DeleteForever } from "@mui/icons-material";
+import { useAlert } from "../../context/AlertContext"; // Import useAlert
 
 const EditTournamentModal = ({
   tournament,
@@ -8,13 +10,14 @@ const EditTournamentModal = ({
   onClose,
   onAddContestant,
   onRemoveContestant,
+  refreshTournament,
 }) => {
   const [contestantName, setContestantName] = useState("");
-  const [isAddingContestant, setIsAddingContestant] = useState(false);
+  const { showSnackbar } = useAlert(); // Get showAlert from context
 
   useEffect(() => {
     if (!isOpen) {
-      setContestantName(""); // Reset when modal closes
+      setContestantName("");
     }
   }, [isOpen]);
 
@@ -24,19 +27,28 @@ const EditTournamentModal = ({
     e.preventDefault();
 
     if (!contestantName.trim()) {
-      return; // Prevent empty submissions
+      showSnackbar("Contestant name cannot be empty.", "warning");
+      return;
     }
 
-    setIsAddingContestant(true); // Set adding state to true
-
     try {
-      await onAddContestant(tournament.id, contestantName.trim()); // Await the API call
-      // Immediately reset the input after the addition is successful
+      await onAddContestant(tournament.id, contestantName.trim());
       setContestantName("");
+      refreshTournament();
+      showSnackbar("Contestant added successfully!", "success");
     } catch (error) {
       console.error("Error adding contestant:", error);
-    } finally {
-      setIsAddingContestant(false); // Reset adding state
+      showSnackbar("Failed to add contestant.", "error");
+    }
+  };
+
+  const handleRemoveContestant = async (contestantId) => {
+    try {
+      await onRemoveContestant(tournament.id, contestantId);
+      showSnackbar("Contestant removed successfully!", "success");
+    } catch (error) {
+      console.error("Error removing contestant:", error);
+      showSnackbar("Failed to remove contestant.", "error");
     }
   };
 
@@ -67,13 +79,17 @@ const EditTournamentModal = ({
             tournament.contestants.map((contestant) => (
               <li key={contestant.id}>
                 {contestant.fullName}
-                <button
-                  onClick={() =>
-                    onRemoveContestant(tournament.id, contestant.id)
-                  }
+                <Stack
+                  spacing={2}
+                  direction="row"
+                  sx={{ justifyContent: "center", alignItems: "center" }}
                 >
-                  Remove
-                </button>
+                  <IconButton
+                    onClick={() => handleRemoveContestant(contestant.id)}
+                  >
+                    <DeleteForever />
+                  </IconButton>
+                </Stack>
               </li>
             ))
           ) : (
