@@ -1,11 +1,16 @@
 .header {
-  background-color: #282c34;
-  padding: 20px;
-  text-align: center;
+  display: flex; /* Use flexbox for horizontal alignment */
+  align-items: center; /* Center vertically */
+  padding: 10px 20px; /* Adjust padding as necessary */
+  background-color: #f8f8f8; /* Optional: Add a background color */
+}
+
+.header-logo {
+  width: 70px; /* Adjust size as necessary */
+  height: auto; /* Maintain aspect ratio */
+  margin-right: 10px; /* Space between the image and title */
 }
 
 .header-title {
-  color: white;
-  font-size: 2em;
-  margin: 0;
+  font-size: 24px; /* Adjust font size as necessary */
 }

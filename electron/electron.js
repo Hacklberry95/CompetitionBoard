@@ -16,7 +16,6 @@ function createWindow() {
       enableRemoteModule: false,
     },
   });
-
   setTimeout(() => {
     mainWindow
       .loadURL("http://localhost:3000")
