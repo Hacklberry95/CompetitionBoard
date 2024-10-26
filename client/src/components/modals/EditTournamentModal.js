@@ -46,7 +46,7 @@ const EditTournamentModal = ({
         <span className="close" onClick={onClose}>
           &times;
         </span>
-        <h3>Edit Tournament: {tournament.name}</h3>
+        <h3>{tournament.name}</h3>
 
         <form onSubmit={handleAddContestant} className="add-contestant-form">
           <h4>Add Contestant</h4>

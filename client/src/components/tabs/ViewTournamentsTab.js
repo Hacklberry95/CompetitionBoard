@@ -3,6 +3,8 @@ import tournamentAPI from "../../api/tournamentAPI";
 import contestantsAPI from "../../api/contestantsAPI";
 import EditTournamentModal from "../modals/EditTournamentModal";
 import "../../styles/ViewTournamentsTab.css";
+import { Stack, IconButton } from "@mui/material";
+import { EditNote, DeleteForever } from "@mui/icons-material";
 
 const ViewTournamentsTab = () => {
   const [tournaments, setTournaments] = useState([]);
@@ -14,7 +16,6 @@ const ViewTournamentsTab = () => {
   });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTournament, setSelectedTournament] = useState(null);
-  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     fetchTournaments();
@@ -38,7 +39,7 @@ const ViewTournamentsTab = () => {
       const newTournament = await tournamentAPI.createTournament(formData);
       alert("Tournament created successfully!");
       setFormData({ name: "", date: "", location: "" });
-      setTournaments([...tournaments, newTournament]); // Update state directly
+      setTournaments([...tournaments, newTournament]);
     } catch (error) {
       console.error("Error creating tournament:", error);
     }
@@ -59,6 +60,22 @@ const ViewTournamentsTab = () => {
     }
   };
 
+  const deleteTournament = async (tournament) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete the tournament "${tournament.name}"?`
+    );
+
+    if (confirmed) {
+      try {
+        await tournamentAPI.deleteTournament(tournament.id);
+        alert("Tournament deleted successfully!");
+        fetchTournaments(); // Refresh the list after deletion
+      } catch (error) {
+        alert("Error while deleting tournament!");
+      }
+    }
+  };
+
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedTournament(null);
@@ -66,13 +83,11 @@ const ViewTournamentsTab = () => {
 
   const handleAddContestant = async (tournamentId, fullName) => {
     try {
-      const newContestant = await contestantsAPI.addContestantToTournament(
+      const newContestant = await tournamentAPI.addContestantToTournament(
         tournamentId,
         { fullName }
       );
       alert("Contestant added successfully!");
-
-      // Update state directly to avoid re-fetch
       setSelectedTournament((prev) => ({
         ...prev,
         contestants: [...prev.contestants, newContestant],
@@ -86,8 +101,6 @@ const ViewTournamentsTab = () => {
     try {
       await contestantsAPI.deleteContestant(tournamentId, contestantId);
       alert("Contestant removed successfully!");
-
-      // Update state directly to avoid re-fetch
       setSelectedTournament((prev) => ({
         ...prev,
         contestants: prev.contestants.filter((c) => c.id !== contestantId),
@@ -151,14 +164,21 @@ const ViewTournamentsTab = () => {
                   <td>{new Date(tournament.date).toLocaleDateString()}</td>
                   <td>{tournament.location}</td>
                   <td>
-                    <button
-                      className="edit-button"
-                      onClick={() => openModal(tournament)}
+                    <Stack
+                      spacing={2}
+                      direction="row"
+                      sx={{
+                        justifyContent: "center",
+                        alignItems: "center",
+                      }}
                     >
-                      <span className="material-symbols-outlined">
-                        edit_note
-                      </span>
-                    </button>
+                      <IconButton onClick={() => openModal(tournament)}>
+                        <EditNote />
+                      </IconButton>
+                      <IconButton onClick={() => deleteTournament(tournament)}>
+                        <DeleteForever />
+                      </IconButton>
+                    </Stack>
                   </td>
                 </tr>
               ))
