@@ -84,4 +84,21 @@ router.delete("/contestants/:id", (req, res) => {
   });
 });
 
+// Delete a contestant by tournamentId and contestantId
+router.delete("/contestants/:tournamentId/:contestantId", (req, res) => {
+  const { tournamentId, contestantId } = req.params;
+
+  // Optionally validate tournamentId and contestantId if needed
+
+  Contestant.deleteById(db, contestantId, tournamentId, (err, message) => {
+    if (err) {
+      console.error("Error deleting contestant:", err.message);
+      return res
+        .status(500)
+        .json({ message: "Error deleting contestant", error: err.message });
+    }
+    return res.json({ message });
+  });
+});
+
 module.exports = router;

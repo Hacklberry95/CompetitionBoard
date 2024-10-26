@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import tournamentAPI from "../../api/tournamentAPI";
+import contestantsAPI from "../../api/contestantsAPI";
+import EditTournamentModal from "../modals/EditTournamentModal";
 import "../../styles/ViewTournamentsTab.css";
 
 const ViewTournamentsTab = () => {
@@ -10,10 +12,9 @@ const ViewTournamentsTab = () => {
     date: "",
     location: "",
   });
-  const [contestantData, setContestantData] = useState({
-    fullName: "",
-    tournamentId: "",
-  });
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedTournament, setSelectedTournament] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     fetchTournaments();
@@ -31,45 +32,68 @@ const ViewTournamentsTab = () => {
     }
   };
 
-  const handleTournamentChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  };
-
   const handleTournamentSubmit = async (e) => {
     e.preventDefault();
     try {
-      await tournamentAPI.createTournament(formData);
+      const newTournament = await tournamentAPI.createTournament(formData);
       alert("Tournament created successfully!");
       setFormData({ name: "", date: "", location: "" });
-      fetchTournaments();
+      setTournaments([...tournaments, newTournament]); // Update state directly
     } catch (error) {
       console.error("Error creating tournament:", error);
     }
   };
 
-  const handleContestantChange = (e) => {
-    const { name, value } = e.target;
-    setContestantData({ ...contestantData, [name]: value });
+  const openModal = async (tournament) => {
+    try {
+      const fullTournament = await tournamentAPI.getTournamentById(
+        tournament.id
+      );
+      const contestants = await contestantsAPI.getContestantsByTournamentId(
+        tournament.id
+      );
+      setSelectedTournament({ ...fullTournament, contestants });
+      setIsModalOpen(true);
+    } catch (error) {
+      console.error("Error fetching tournament details:", error);
+    }
   };
 
-  const handleContestantSubmit = async (e) => {
-    e.preventDefault();
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedTournament(null);
+  };
+
+  const handleAddContestant = async (tournamentId, fullName) => {
     try {
-      if (!contestantData.tournamentId) {
-        alert("Please select a tournament");
-        return;
-      }
-      await tournamentAPI.addContestantToTournament(
-        contestantData.tournamentId,
-        {
-          fullName: contestantData.fullName,
-        }
+      const newContestant = await contestantsAPI.addContestantToTournament(
+        tournamentId,
+        { fullName }
       );
       alert("Contestant added successfully!");
-      setContestantData({ fullName: "", tournamentId: "" });
+
+      // Update state directly to avoid re-fetch
+      setSelectedTournament((prev) => ({
+        ...prev,
+        contestants: [...prev.contestants, newContestant],
+      }));
     } catch (error) {
       console.error("Error adding contestant:", error);
+    }
+  };
+
+  const handleRemoveContestant = async (tournamentId, contestantId) => {
+    try {
+      await contestantsAPI.deleteContestant(tournamentId, contestantId);
+      alert("Contestant removed successfully!");
+
+      // Update state directly to avoid re-fetch
+      setSelectedTournament((prev) => ({
+        ...prev,
+        contestants: prev.contestants.filter((c) => c.id !== contestantId),
+      }));
+    } catch (error) {
+      console.error("Error removing contestant:", error);
     }
   };
 
@@ -85,21 +109,23 @@ const ViewTournamentsTab = () => {
           name="name"
           placeholder="Tournament Name"
           value={formData.name}
-          onChange={handleTournamentChange}
+          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
         />
         <input
           type="date"
           name="date"
           placeholder="Tournament Date"
           value={formData.date}
-          onChange={handleTournamentChange}
+          onChange={(e) => setFormData({ ...formData, date: e.target.value })}
         />
         <input
           type="text"
           name="location"
           placeholder="Location"
           value={formData.location}
-          onChange={handleTournamentChange}
+          onChange={(e) =>
+            setFormData({ ...formData, location: e.target.value })
+          }
         />
         <button type="submit">Create Tournament</button>
       </form>
@@ -114,6 +140,7 @@ const ViewTournamentsTab = () => {
               <th>Name</th>
               <th>Date</th>
               <th>Location</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -123,40 +150,34 @@ const ViewTournamentsTab = () => {
                   <td>{tournament.name}</td>
                   <td>{new Date(tournament.date).toLocaleDateString()}</td>
                   <td>{tournament.location}</td>
+                  <td>
+                    <button
+                      className="edit-button"
+                      onClick={() => openModal(tournament)}
+                    >
+                      <span className="material-symbols-outlined">
+                        edit_note
+                      </span>
+                    </button>
+                  </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="3">No tournaments found.</td>
+                <td colSpan="4">No tournaments found.</td>
               </tr>
             )}
           </tbody>
         </table>
       )}
 
-      <form onSubmit={handleContestantSubmit} className="add-contestant-form">
-        <h3>Add Contestant to Tournament</h3>
-        <select
-          name="tournamentId"
-          value={contestantData.tournamentId}
-          onChange={handleContestantChange}
-        >
-          <option value="">Select Tournament</option>
-          {tournaments.map((tournament) => (
-            <option key={tournament.id} value={tournament.id}>
-              {tournament.name}
-            </option>
-          ))}
-        </select>
-        <input
-          type="text"
-          name="fullName"
-          placeholder="Contestant Full Name"
-          value={contestantData.fullName}
-          onChange={handleContestantChange}
-        />
-        <button type="submit">Add Contestant</button>
-      </form>
+      <EditTournamentModal
+        tournament={selectedTournament}
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        onAddContestant={handleAddContestant}
+        onRemoveContestant={handleRemoveContestant}
+      />
     </div>
   );
 };

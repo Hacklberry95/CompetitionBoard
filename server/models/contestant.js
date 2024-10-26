@@ -40,6 +40,41 @@ class Contestant {
   static delete(db, id, callback) {
     db.run(`DELETE FROM contestants WHERE id = ?;`, [id], callback);
   }
+
+  static deleteById(db, id, tournamentId, callback) {
+    // First, check if a contestant with the given ID exists for the specified tournament
+    db.get(
+      `SELECT * FROM contestants WHERE id = ? AND tournamentId = ?;`,
+      [id, tournamentId],
+      (err, row) => {
+        if (err) {
+          return callback(err);
+        }
+        if (!row) {
+          return callback(
+            new Error(
+              `Contestant with ID ${id} not found in tournament ${tournamentId}.`
+            )
+          );
+        }
+
+        // If contestant exists, delete it
+        db.run(
+          `DELETE FROM contestants WHERE id = ? AND tournamentId = ?;`,
+          [id, tournamentId],
+          (err) => {
+            if (err) {
+              return callback(err);
+            }
+            callback(
+              null,
+              `Contestant with ID ${id} deleted from tournament ${tournamentId}.`
+            );
+          }
+        );
+      }
+    );
+  }
 }
 
 module.exports = Contestant;
