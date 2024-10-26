@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "../../styles/EditTournamentModal.css";
 import { Stack, IconButton, Alert } from "@mui/material";
-import { DeleteForever } from "@mui/icons-material";
+import { DeleteForever, EditNote } from "@mui/icons-material";
 import { useAlert } from "../../context/AlertContext"; // Import useAlert
 
 const EditTournamentModal = ({
@@ -73,21 +73,36 @@ const EditTournamentModal = ({
           <button type="submit">Add Contestant</button>
         </form>
 
-        <h4>Contestants</h4>
+        <h4 className="contestant-list-header">Contestants</h4>
         <ul className="contestants-edit-list">
+          <li className="contestants-header">
+            <span>Name</span>
+            <span>Weight</span>
+            <span>Category</span>
+            <span>Actions</span>
+          </li>
           {tournament.contestants?.length > 0 ? (
             tournament.contestants.map((contestant) => (
-              <li key={contestant.id}>
-                {contestant.fullName}
+              <li key={contestant.id} className="contestant-row">
+                <span>{contestant.fullName}</span>
+                <span>{contestant.weight}</span>
+                <span>{contestant.category}</span>
                 <Stack
                   spacing={2}
                   direction="row"
-                  sx={{ justifyContent: "center", alignItems: "center" }}
+                  sx={{
+                    justifyContent: "center",
+                    alignItems: "center",
+                    display: "flex",
+                  }}
                 >
                   <IconButton
                     onClick={() => handleRemoveContestant(contestant.id)}
                   >
                     <DeleteForever />
+                  </IconButton>
+                  <IconButton>
+                    <EditNote />
                   </IconButton>
                 </Stack>
               </li>

@@ -3,9 +3,9 @@ import Header from "./components/pageComponents/Header";
 import SidebarMenu from "./components/pageComponents/SideBar";
 import HomePage from "./components/pageComponents/HomePage";
 import { AlertProvider } from "./context/AlertContext";
-import SnackbarMessage from "./components/SnackbarMessage";
-import "./styles/App.css";
+import SnackbarMessage from "./components/helpers/SnackbarMessage";
 import { BrowserRouter as Router } from "react-router-dom";
+import "./styles/App.css";
 
 const App = () => {
   return (
@@ -15,7 +15,6 @@ const App = () => {
           <Header />
           <SnackbarMessage />
           <div className="main-content">
-            {/* Sidebar is always displayed on the left */}
             <SidebarMenu />
             <HomePage />
           </div>

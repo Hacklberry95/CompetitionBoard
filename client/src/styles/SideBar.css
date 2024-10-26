@@ -1,6 +1,6 @@
 .sidebar-container {
   width: 250px; /* Adjust as needed */
-  height: 80vh; /* Full height of the viewport */
+  height: 100%; /* Full height of the viewport */
   overflow-y: auto; /* Enable vertical scrolling */
   background-color: #f4f4f4; /* Background color */
   position: relative; /* Keep sidebar fixed while scrolling */
