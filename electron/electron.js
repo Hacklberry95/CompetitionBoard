@@ -1,4 +1,4 @@
-const { app, BrowserWindow } = require("electron");
+const { app, BrowserWindow, screen } = require("electron");
 const { spawn } = require("child_process");
 const path = require("path");
 
@@ -7,9 +7,10 @@ let reactProcess;
 
 function createWindow() {
   console.log("Creating Electron window...");
+  const { width, height } = screen.getPrimaryDisplay().workAreaSize;
   mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: width,
+    height: height,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: true,
