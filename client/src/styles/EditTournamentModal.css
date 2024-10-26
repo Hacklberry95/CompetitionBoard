@@ -72,8 +72,9 @@ h3 {
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  font-weight: 500;
+  font-weight: 800;
   transition: background-color 0.3s ease;
+  margin-left: 6px;
 }
 
 .add-contestant-form button:hover {
