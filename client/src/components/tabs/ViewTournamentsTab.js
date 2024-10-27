@@ -119,11 +119,11 @@ const ViewTournamentsTab = () => {
     setSelectedTournament(null);
   };
   // Handles adding contestants to tournament function in the EditTournamentModal
-  const handleAddContestant = async (tournamentId, fullName) => {
+  const handleAddContestant = async (tournamentId, contestantData) => {
     try {
       const newContestant = await tournamentAPI.addContestantToTournament(
         tournamentId,
-        { fullName }
+        contestantData
       );
       showSnackbar("Contestant added successfully!", "success");
       setSelectedTournament((prev) => ({
@@ -135,6 +135,7 @@ const ViewTournamentsTab = () => {
       showSnackbar("Failed to add contestant.", "error");
     }
   };
+
   // Handles removing contestants from tournament function in the EditTournamentModal
   const handleRemoveContestant = async (tournamentId, contestantId) => {
     try {

@@ -7,32 +7,32 @@ const path = require("path");
 const dbPath = path.join(__dirname, "../../db/tournament.db");
 const db = new (require("sqlite3").verbose().Database)(dbPath);
 
-// Create a new contestant
-router.post("/contestants", (req, res) => {
-  const { fullName, tournamentId } = req.body;
+// // Create a new contestant
+// router.post("/contestants", (req, res) => {
+//   const { fullName, tournamentId } = req.body;
 
-  // Validate input
-  if (!fullName || !tournamentId) {
-    return res
-      .status(400)
-      .json({ message: "fullName and tournamentId are required." });
-  }
+//   // Validate input
+//   if (!fullName || !tournamentId) {
+//     return res
+//       .status(400)
+//       .json({ message: "fullName and tournamentId are required." });
+//   }
 
-  const newContestant = new Contestant(fullName, tournamentId);
-  newContestant.save(db, (err) => {
-    if (err) {
-      console.error("Error adding contestant:", err.message);
-      return res
-        .status(500)
-        .json({ message: "Error adding contestant", error: err });
-    }
-    return res.status(201).json({
-      message: "Contestant added successfully!",
-      fullName,
-      tournamentId,
-    });
-  });
-});
+//   const newContestant = new Contestant(fullName, tournamentId);
+//   newContestant.save(db, (err) => {
+//     if (err) {
+//       console.error("Error adding contestant:", err.message);
+//       return res
+//         .status(500)
+//         .json({ message: "Error adding contestant", error: err });
+//     }
+//     return res.status(201).json({
+//       message: "Contestant added successfully!",
+//       fullName,
+//       tournamentId,
+//     });
+//   });
+// });
 
 // Get all contestants for a specific tournament
 router.get("/contestants/tournament/:tournamentId", (req, res) => {

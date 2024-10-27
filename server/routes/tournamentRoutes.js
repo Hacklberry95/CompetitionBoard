@@ -2,7 +2,7 @@
 const express = require("express");
 const router = express.Router();
 const Tournament = require("../models/tournament");
-const contestant = require("../models/contestant");
+const Contestant = require("../models/contestant");
 const path = require("path");
 
 const dbPath = path.join(__dirname, "../../db/tournament.db");
@@ -79,9 +79,17 @@ router.delete("/tournaments/:id", (req, res) => {
 // Add a contestant to a tournament
 router.post("/tournaments/:tournamentId/contestants", (req, res) => {
   const { tournamentId } = req.params;
-  const { fullName } = req.body;
+  const { fullName, gender, arm, weightCategory, division } = req.body;
 
-  const newContestant = new contestant(fullName, tournamentId);
+  const newContestant = new Contestant(
+    fullName,
+    tournamentId,
+    gender,
+    arm,
+    weightCategory,
+    division
+  );
+
   newContestant.save(db, (err) => {
     if (err) {
       return res

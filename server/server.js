@@ -9,8 +9,6 @@ const port = 5000;
 // Importing Models
 const Tournament = require("./models/tournament");
 const Match = require("./models/match");
-const Bracket = require("./models/bracket");
-const BracketMatches = require("./models/bracket_matches");
 const Contestant = require("./models/contestant");
 
 // Middleware
@@ -32,8 +30,6 @@ const db = new sqlite3.Database(dbPath, (err) => {
 
         Tournament.createTable(db);
         Match.createTable(db);
-        Bracket.createTable(db);
-        BracketMatches.createTable(db);
         Contestant.createTable(db);
       }
     });
@@ -42,12 +38,10 @@ const db = new sqlite3.Database(dbPath, (err) => {
 
 const tournamentRoutes = require("./routes/tournamentRoutes");
 const matchRoutes = require("./routes/matchRoutes");
-const bracketRoutes = require("./routes/bracketRoutes");
 const contestantRoutes = require("./routes/contestantRoutes");
 
 app.use("/api", tournamentRoutes);
 app.use("/api", matchRoutes);
-app.use("/api", bracketRoutes);
 app.use("/api", contestantRoutes);
 
 const server = app.listen(port, () => {

@@ -16,7 +16,7 @@
   background-color: #fdfdfd;
   padding: 30px;
   border-radius: 12px;
-  max-width: 600px;
+  max-width: 800px; /* Increased width for more columns */
   width: 100%;
   position: relative;
   box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.15);
@@ -50,7 +50,15 @@ h3 {
   margin-top: 15px;
 }
 
-.add-contestant-form input {
+.add-contestant-form {
+  display: flex; /* Use flexbox */
+  flex-direction: column; /* Arrange items in a column */
+  align-items: center; /* Center items horizontally */
+  justify-content: center; /* Center items vertically */
+}
+
+.add-contestant-form input,
+.add-contestant-form select {
   width: 70%;
   padding: 10px;
   margin: 10px 0;
@@ -60,9 +68,10 @@ h3 {
   transition: border-color 0.3s;
 }
 
-.add-contestant-form input:focus {
-  border-color: #007bff;
-  outline: none;
+.add-contestant-form input:focus,
+.add-contestant-form select:focus {
+  border-color: #007bff; /* Change border color on focus */
+  outline: none; /* Remove default outline */
 }
 
 .add-contestant-form button {
@@ -94,7 +103,10 @@ ul {
 .contestants-header,
 .contestant-row {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr; /* Four evenly spaced columns */
+  grid-template-columns: repeat(
+    5,
+    1fr
+  ); /* Five evenly spaced columns for Name, Weight, Arm, Category, and Actions */
   padding: 10px 15px;
   background-color: #f7f7f7;
   border-radius: 8px;
@@ -124,9 +136,11 @@ ul {
   justify-content: center;
   align-items: center;
 }
+
 .contestant-list-header {
   text-align: center;
 }
+
 h4 {
   margin-bottom: 0px;
 }

@@ -1,24 +1,48 @@
 class Contestant {
+  // Create the contestants table with new fields
   static createTable(db) {
     const query = `
       CREATE TABLE IF NOT EXISTS contestants (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         fullName TEXT NOT NULL,
+        gender TEXT,                   
+        arm TEXT,                       
         tournamentId INTEGER,
+        weightCategory TEXT,            
+        division TEXT,           
         FOREIGN KEY (tournamentId) REFERENCES tournaments(id)
       );
     `;
     db.run(query);
   }
 
-  constructor(fullName, tournamentId) {
+  constructor(fullName, tournamentId, gender, arm, weightCategory, division) {
     this.fullName = fullName;
     this.tournamentId = tournamentId;
+    this.gender = gender;
+    this.arm = arm;
+    this.weightCategory = weightCategory;
+    this.division = division;
   }
 
+  // Update the save method to include all new fields
   save(db, callback) {
-    const query = `INSERT INTO contestants (fullName, tournamentId) VALUES (?, ?);`;
-    db.run(query, [this.fullName, this.tournamentId], callback);
+    const query = `
+      INSERT INTO contestants (fullName, tournamentId, gender, arm, weightCategory, division)
+      VALUES (?, ?, ?, ?, ?, ?);
+    `;
+    db.run(
+      query,
+      [
+        this.fullName,
+        this.tournamentId,
+        this.gender,
+        this.arm,
+        this.weightCategory,
+        this.division,
+      ],
+      callback
+    );
   }
 
   static findByTournamentId(db, tournamentId, callback) {
@@ -29,10 +53,16 @@ class Contestant {
     );
   }
 
-  static update(db, id, { fullName }, callback) {
+  // Update the update method to allow updating all relevant fields
+  static update(
+    db,
+    id,
+    { fullName, gender, arm, weightCategory, division },
+    callback
+  ) {
     db.run(
-      `UPDATE contestants SET fullName = ? WHERE id = ?;`,
-      [fullName, id],
+      `UPDATE contestants SET fullName = ?, gender = ?, arm = ?, weightCategory = ?, division = ? WHERE id = ?;`,
+      [fullName, gender, arm, weightCategory, division, id],
       callback
     );
   }
