@@ -3,16 +3,19 @@ const express = require("express");
 const router = express.Router();
 const Tournament = require("../models/tournament");
 const Contestant = require("../models/contestant");
+const Match = require("../models/match");
+const Bracket = require("../models/brackets");
 const path = require("path");
+const BracketEntries = require("../models/bracketEntries");
 
 const dbPath = path.join(__dirname, "../../db/tournament.db");
 const db = new (require("sqlite3").verbose().Database)(dbPath);
 
 // Create a new tournament
 router.post("/tournaments", (req, res) => {
-  const { name, date, location } = req.body;
-  const newTournament = new Tournament(name, date, location);
-  newTournament.save(db, (err, tournamentId) => {
+  const { Name, Date, Location } = req.body;
+  const newTournament = new Tournament(Name, Date, Location);
+  newTournament.save(db, function (err) {
     if (err) {
       return res
         .status(500)
@@ -20,7 +23,7 @@ router.post("/tournaments", (req, res) => {
     }
     return res
       .status(201)
-      .json({ message: "Tournament created successfully!", id: tournamentId });
+      .json({ message: "Tournament created successfully!", id: this.lastID });
   });
 });
 
@@ -44,6 +47,9 @@ router.get("/tournaments/:id", (req, res) => {
       return res
         .status(500)
         .json({ message: "Error fetching tournament", error: err });
+    }
+    if (!tournament) {
+      return res.status(404).json({ message: "Tournament not found" });
     }
     return res.json(tournament);
   });
@@ -76,18 +82,64 @@ router.delete("/tournaments/:id", (req, res) => {
   });
 });
 
+router.delete("/tournaments/:tournamentId/deleteAll", (req, res) => {
+  const { tournamentId } = req.params;
+
+  // Create an array of deletion promises
+  const deletionPromises = [
+    new Promise((resolve, reject) => {
+      Match.deleteAll(db, (err) => {
+        if (err) {
+          return reject(err);
+        }
+        resolve();
+      });
+    }),
+    new Promise((resolve, reject) => {
+      Bracket.deleteAll(db, (err) => {
+        if (err) {
+          return reject(err);
+        }
+        resolve();
+      });
+    }),
+    new Promise((resolve, reject) => {
+      BracketEntries.deleteAll(db, (err) => {
+        if (err) {
+          return reject(err);
+        }
+        resolve();
+      });
+    }),
+  ];
+
+  // Execute all deletion promises
+  Promise.all(deletionPromises)
+    .then(() => {
+      return res.json({
+        message:
+          "All matches, brackets, and bracket entries deleted successfully.",
+      });
+    })
+    .catch((err) => {
+      return res
+        .status(500)
+        .json({ message: "Error deleting records", error: err });
+    });
+});
+
 // Add a contestant to a tournament
 router.post("/tournaments/:tournamentId/contestants", (req, res) => {
   const { tournamentId } = req.params;
-  const { fullName, gender, arm, weightCategory, division } = req.body;
-
+  const { Name, Gender, WeightKg, ArmPreference, Division } = req.body;
+  console.log(req.body);
   const newContestant = new Contestant(
-    fullName,
     tournamentId,
-    gender,
-    arm,
-    weightCategory,
-    division
+    Name,
+    Gender,
+    WeightKg,
+    ArmPreference,
+    Division
   );
 
   newContestant.save(db, (err) => {
@@ -97,6 +149,130 @@ router.post("/tournaments/:tournamentId/contestants", (req, res) => {
         .json({ message: "Error adding contestant", error: err });
     }
     return res.status(201).json({ message: "Contestant added successfully!" });
+  });
+});
+
+// Add a contestant to a tournament
+router.post("/tournaments/:tournamentId/contestants", (req, res) => {
+  const { tournamentId } = req.params;
+  const { Name, Gender, WeightKg, ArmPreference, Division } = req.body;
+
+  // Log the incoming data
+  console.log(req.body);
+
+  const newContestant = new Contestant(
+    tournamentId,
+    Name,
+    Gender,
+    WeightKg,
+    ArmPreference,
+    Division
+  );
+
+  newContestant.save(db, (err) => {
+    if (err) {
+      return res
+        .status(500)
+        .json({ message: "Error adding contestant", error: err });
+    }
+    return res.status(201).json({ message: "Contestant added successfully!" });
+  });
+});
+
+// Endpoint to generate brackets and matches for a tournament
+router.post("/tournaments/:tournamentId/generateBrackets", (req, res) => {
+  const { tournamentId } = req.params;
+
+  // Fetch contestants for the tournament
+  Contestant.findByTournamentId(db, tournamentId, (err, contestants) => {
+    if (err) {
+      return res.status(500).json({ error: "Error fetching contestants." });
+    }
+
+    if (contestants.length === 0) {
+      return res
+        .status(400)
+        .json({ error: "No contestants found for this tournament." }); // Updated message
+    }
+
+    // Group contestants by bracket criteria
+    const brackets = {};
+    contestants.forEach((contestant) => {
+      const key = `${contestant.Division}-${contestant.Gender}-${
+        contestant.ArmPreference
+      }-${contestant.WeightKg > 86 ? "+86" : "-86"}`;
+      if (!brackets[key]) brackets[key] = [];
+      brackets[key].push(contestant);
+    });
+
+    // Generate brackets and matches
+    const bracketPromises = Object.keys(brackets).map((key) => {
+      const [division, gender, arm, weightClass] = key.split("-");
+
+      return new Promise((resolve, reject) => {
+        // Insert a new bracket
+        Bracket.create(
+          db,
+          tournamentId,
+          division,
+          gender,
+          arm,
+          weightClass,
+          (err, bracketId) => {
+            if (err) return reject(err);
+
+            // Add contestants to the bracket
+            const bracketEntryStmt = db.prepare(`
+              INSERT INTO BracketEntries (BracketID, ContestantId) VALUES (?, ?)
+            `);
+            brackets[key].forEach((contestant) => {
+              bracketEntryStmt.run(bracketId, contestant.id);
+            });
+
+            // Randomize contestants and create matches
+            const shuffledParticipants = brackets[key].sort(
+              () => 0.5 - Math.random()
+            );
+            const matchPromises = [];
+
+            for (let i = 0; i < shuffledParticipants.length; i += 2) {
+              if (i + 1 < shuffledParticipants.length) {
+                matchPromises.push(
+                  new Promise((resolve, reject) => {
+                    Match.create(
+                      db,
+                      bracketId,
+                      1,
+                      Math.floor(i / 2) + 1,
+                      shuffledParticipants[i].id, // Change to contestant id
+                      shuffledParticipants[i + 1].id, // Change to contestant id
+                      (err) => {
+                        if (err) return reject(err);
+                        resolve();
+                      }
+                    );
+                  })
+                );
+              }
+            }
+            Promise.all(matchPromises)
+              .then(() => resolve())
+              .catch(reject);
+          }
+        );
+      });
+    });
+
+    Promise.all(bracketPromises)
+      .then(() =>
+        res.json({ message: "Brackets and matches generated successfully." })
+      )
+      .catch((err) =>
+        res.status(500).json({
+          error: "Error generating brackets or matches.",
+          details: err.message,
+        })
+      );
   });
 });
 

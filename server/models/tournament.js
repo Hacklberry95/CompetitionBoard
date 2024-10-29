@@ -2,11 +2,11 @@
 class Tournament {
   static createTable(db) {
     const query = `
-            CREATE TABLE IF NOT EXISTS tournaments (
+            CREATE TABLE IF NOT EXISTS Tournaments (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT,
-                date TEXT,
-                location TEXT
+                Name TEXT,
+                Date TEXT,
+                Location TEXT
             );
         `;
     db.run(query, (err) => {
@@ -26,33 +26,33 @@ class Tournament {
 
   save(db, callback) {
     const query = `
-            INSERT INTO tournaments (name, date, location)
+            INSERT INTO Tournaments (Name, Date, Location)
             VALUES (?, ?, ?);
         `;
     db.run(query, [this.name, this.date, this.location], callback);
   }
 
   static findAll(db, callback) {
-    const query = `SELECT * FROM tournaments;`;
+    const query = `SELECT * FROM Tournaments;`;
     db.all(query, [], callback);
   }
 
   static findById(db, id, callback) {
-    const query = `SELECT * FROM tournaments WHERE id = ?;`;
+    const query = `SELECT * FROM Tournaments WHERE id = ?;`;
     db.get(query, [id], callback);
   }
 
   static update(db, id, { name, date, location }, callback) {
     const query = `
-            UPDATE tournaments
-            SET name = ?, date = ?, location = ?
+            UPDATE Tournaments
+            SET Name = ?, Date = ?, Location = ?
             WHERE id = ?;
         `;
     db.run(query, [name, date, location, id], callback);
   }
 
   static delete(db, id, callback) {
-    const query = `DELETE FROM tournaments WHERE id = ?;`;
+    const query = `DELETE FROM Tournaments WHERE id = ?;`;
     db.run(query, [id], callback);
   }
 }

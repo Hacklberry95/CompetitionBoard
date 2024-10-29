@@ -1,5 +1,6 @@
 {
   "name": "tournamentbracket",
+  "productName": "Tournament Organizer",
   "version": "1.0.0",
   "description": "A desktop app for managing and tracking tournament brackets.",
   "main": "electron/electron.js",
@@ -7,10 +8,10 @@
     "start": "npm run electron-start",
     "start-client": "cd client && BROWSER=none npm start ",
     "start-server": "cd server && nodemon server.js",
-    "electron-start": "concurrently \"npm run start-client\" \"npm run start-server\" \" wait-on -v http://localhost:3000\" \"electron .\"",
+    "electron-start": "concurrently \"npm run start-client\" \"npm run start-server\" \" wait-on http://localhost:3000\" \"electron .\"",
     "build-electron": "electron-builder"
   },
-  "author": "Your Name",
+  "author": "Matej Hackl",
   "license": "ISC",
   "devDependencies": {
     "concurrently": "^7.6.0",

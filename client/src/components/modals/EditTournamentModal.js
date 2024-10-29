@@ -3,7 +3,7 @@ import "../../styles/EditTournamentModal.css";
 import { Stack, IconButton } from "@mui/material";
 import { DeleteForever, EditNote } from "@mui/icons-material";
 import { useAlert } from "../../context/AlertContext";
-import { armAndWeightCategories } from "../constants/WeightCategories"; // Adjust the path as necessary
+import { armAndWeightCategories } from "../constants/WeightCategories";
 
 const EditTournamentModal = ({
   tournament,
@@ -15,12 +15,10 @@ const EditTournamentModal = ({
 }) => {
   const [contestantName, setContestantName] = useState("");
   const { showSnackbar } = useAlert();
-  const [weightCategory, setWeightCategory] = useState("");
-  const [division, setDivision] = useState(""); // Corrected to use camelCase
+  const [weightKg, setWeightKg] = useState("");
+  const [division, setDivision] = useState("");
   const [gender, setGender] = useState("");
-  const [arm, setArm] = useState("");
-
-  // State for available weight categories based on selected gender and division
+  const [armPreference, setArmPreference] = useState("");
   const [availableWeightCategories, setAvailableWeightCategories] = useState(
     []
   );
@@ -28,11 +26,11 @@ const EditTournamentModal = ({
   useEffect(() => {
     if (!isOpen) {
       setContestantName("");
-      setWeightCategory("");
-      setDivision(""); // Reset division
-      setGender(""); // Reset gender
-      setArm(""); // Reset arm
-      setAvailableWeightCategories([]); // Reset available weight categories
+      setWeightKg("");
+      setDivision("");
+      setGender("");
+      setArmPreference("");
+      setAvailableWeightCategories([]);
     }
   }, [isOpen]);
 
@@ -43,7 +41,6 @@ const EditTournamentModal = ({
       const allWeights = Object.keys(weights).reduce((acc, armType) => {
         return acc.concat(weights[armType].map((weight) => `${weight}`));
       }, []);
-      // Use Set to remove duplicates
       setAvailableWeightCategories([...new Set(allWeights)]);
     } else {
       setAvailableWeightCategories([]);
@@ -55,7 +52,7 @@ const EditTournamentModal = ({
   const handleAddContestant = async (e) => {
     e.preventDefault();
 
-    // Validate input fields
+    // Check if contestant name is provided
     if (!contestantName.trim()) {
       showSnackbar("Contestant name cannot be empty.", "warning");
       return;
@@ -63,17 +60,29 @@ const EditTournamentModal = ({
 
     try {
       await onAddContestant(tournament.id, {
-        fullName: contestantName.trim(),
-        gender,
-        arm,
-        weightCategory,
-        division,
+        TournamentId: tournament.id,
+        Name: contestantName.trim(),
+        Gender: gender === "Male" ? "M" : "F",
+        ArmPreference:
+          armPreference === "Right"
+            ? "R"
+            : armPreference === "Left"
+            ? "L"
+            : armPreference === "Both"
+            ? "B"
+            : "NULL",
+        WeightKg: parseFloat(weightKg),
+        Division: division,
       });
+
+      // Clear form fields after submission
       setContestantName("");
-      setWeightCategory("");
-      setDivision(""); // Reset division after submission
-      setGender(""); // Reset gender after submission
-      setArm(""); // Reset arm after submission
+      setWeightKg("");
+      setDivision("");
+      setGender("");
+      setArmPreference(""); // Resetting this to empty, adjust if needed
+
+      // Refresh tournament data and show success snackbar
       refreshTournament();
       showSnackbar("Contestant added successfully!", "success");
     } catch (error) {
@@ -110,50 +119,52 @@ const EditTournamentModal = ({
             value={contestantName}
             onChange={(e) => setContestantName(e.target.value)}
           />
-          <select
-            className="contestant-input-field"
-            name="gender"
-            value={gender}
-            onChange={(e) => setGender(e.target.value)}
-          >
-            <option value="">Select Gender</option>
-            <option value="Male">Male</option>
-            <option value="Female">Female</option>
-          </select>
-          <select
-            className="contestant-input-field"
-            name="division"
-            value={division}
-            onChange={(e) => setDivision(e.target.value)} // Fixed casing here
-          >
-            <option value="">Select Division</option>
-            <option value="Beginner">Beginner</option>
-            <option value="Official">Official</option>
-          </select>
-          <select
-            className="contestant-input-field"
-            name="arm"
-            value={arm}
-            onChange={(e) => setArm(e.target.value)}
-          >
-            <option value="">Select Arm</option>
-            <option value="Right">Right</option>
-            <option value="Left">Left</option>
-            <option value="Both">Both</option>
-          </select>
-          <select
-            className="contestant-input-field"
-            name="weightCategory"
-            value={weightCategory}
-            onChange={(e) => setWeightCategory(e.target.value)}
-          >
-            <option value="">Select Weight Category</option>
-            {availableWeightCategories.map((weightOption) => (
-              <option key={weightOption} value={weightOption}>
-                {weightOption}
-              </option>
-            ))}
-          </select>
+          <div className="dropdown-container-editModal">
+            <select
+              className="contestant-input-field"
+              name="gender"
+              value={gender}
+              onChange={(e) => setGender(e.target.value)}
+            >
+              <option value="">Select Gender</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+            </select>
+            <select
+              className="contestant-input-field"
+              name="division"
+              value={division}
+              onChange={(e) => setDivision(e.target.value)}
+            >
+              <option value="">Select Division</option>
+              <option value="Beginner">Beginner</option>
+              <option value="Official">Official</option>
+            </select>
+            <select
+              className="contestant-input-field"
+              name="armPreference"
+              value={armPreference}
+              onChange={(e) => setArmPreference(e.target.value)}
+            >
+              <option value="">Select Arm Preference</option>
+              <option value="Right">Right</option>
+              <option value="Left">Left</option>
+              <option value="Both">Both</option>
+            </select>
+            <select
+              className="contestant-input-field"
+              name="weightKg"
+              value={weightKg}
+              onChange={(e) => setWeightKg(e.target.value)}
+            >
+              <option value="">Select Weight Category</option>
+              {availableWeightCategories.map((weightOption) => (
+                <option key={weightOption} value={weightOption}>
+                  {weightOption}
+                </option>
+              ))}
+            </select>
+          </div>
           <button type="submit">Add Contestant</button>
         </form>
 
@@ -166,39 +177,56 @@ const EditTournamentModal = ({
             <span>Category</span>
             <span>Actions</span>
           </li>
-          {tournament.contestants?.length > 0 ? (
-            tournament.contestants.map((contestant) => (
-              <li key={contestant.id} className="contestant-row">
-                <span>{contestant.fullName}</span>
-                <span>{contestant.weightCategory}</span>
-                <span>{contestant.arm}</span>
-                <span>
-                  {contestant.gender} - {contestant.division || "N/A"}{" "}
-                  {/* Fixed to use division */}
-                </span>
-                <Stack
-                  spacing={2}
-                  direction="row"
-                  sx={{
-                    justifyContent: "center",
-                    alignItems: "center",
-                    display: "flex",
-                  }}
-                >
-                  <IconButton
-                    onClick={() => handleRemoveContestant(contestant.id)}
+          <div className="contestants-list">
+            {tournament.contestants?.length > 0 ? (
+              tournament.contestants.map((contestant) => (
+                <li key={contestant.id} className="contestant-row">
+                  <span>{contestant.Name}</span>
+                  <span>
+                    {contestant.WeightKg >= 0
+                      ? `+${contestant.WeightKg}`
+                      : contestant.WeightKg}{" "}
+                    kg
+                  </span>
+
+                  <span>
+                    {contestant.ArmPreference === "R"
+                      ? "Right"
+                      : contestant.ArmPreference === "L"
+                      ? "Left"
+                      : contestant.ArmPreference === "B"
+                      ? "Both"
+                      : "N/A"}
+                  </span>
+                  <span>
+                    {contestant.Gender === "M" ? "Male" : "Female"} -{" "}
+                    {contestant.Division || "N/A"}{" "}
+                  </span>
+
+                  <Stack
+                    spacing={2}
+                    direction="row"
+                    sx={{
+                      justifyContent: "center",
+                      alignItems: "center",
+                      display: "flex",
+                    }}
                   >
-                    <DeleteForever />
-                  </IconButton>
-                  <IconButton>
-                    <EditNote />
-                  </IconButton>
-                </Stack>
-              </li>
-            ))
-          ) : (
-            <p>No contestants available.</p>
-          )}
+                    <IconButton
+                      onClick={() => handleRemoveContestant(contestant.id)}
+                    >
+                      <DeleteForever />
+                    </IconButton>
+                    <IconButton>
+                      <EditNote />
+                    </IconButton>
+                  </Stack>
+                </li>
+              ))
+            ) : (
+              <p>No contestants available.</p>
+            )}
+          </div>
         </ul>
       </div>
     </div>

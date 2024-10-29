@@ -13,14 +13,24 @@ const contestantsAPI = {
     }
   },
 
+  getContestantById: async (id) => {
+    try {
+      const response = await axios.get(`${API_URL}/${id}`);
+      console.log("getContestantById: ", response.data);
+      return response.data;
+    } catch (error) {
+      throw error.response.data; // Handle error appropriately
+    }
+  },
+
   deleteContestant: async (tournamentId, contestantId) => {
     try {
       const response = await axios.delete(
-        `${API_URL}/${tournamentId}/${contestantId}` // Correct endpoint to match backend
+        `${API_URL}/${tournamentId}/${contestantId}`
       );
-      return response.data; // Returns the success message
+      return response.data;
     } catch (error) {
-      throw error.response.data; // Throw error message
+      throw error.response.data;
     }
   },
 };

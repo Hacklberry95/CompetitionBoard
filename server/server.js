@@ -10,6 +10,8 @@ const port = 5000;
 const Tournament = require("./models/tournament");
 const Match = require("./models/match");
 const Contestant = require("./models/contestant");
+const Brackets = require("./models/brackets");
+const BracketEntries = require("./models/bracketEntries");
 
 // Middleware
 app.use(cors());
@@ -31,18 +33,24 @@ const db = new sqlite3.Database(dbPath, (err) => {
         Tournament.createTable(db);
         Match.createTable(db);
         Contestant.createTable(db);
+        Brackets.createTable(db);
+        BracketEntries.createTable(db);
       }
     });
   }
 });
 
+const bracketEntries = require("./routes/bracketEntriesRoutes");
+const brackets = require("./routes/bracketsRoutes");
 const tournamentRoutes = require("./routes/tournamentRoutes");
-const matchRoutes = require("./routes/matchRoutes");
 const contestantRoutes = require("./routes/contestantRoutes");
+const matchRoutes = require("./routes/matchRoutes");
 
 app.use("/api", tournamentRoutes);
-app.use("/api", matchRoutes);
 app.use("/api", contestantRoutes);
+app.use("/api", matchRoutes);
+app.use("/api", brackets);
+app.use("/api", bracketEntries);
 
 const server = app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);

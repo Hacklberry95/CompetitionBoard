@@ -2,6 +2,7 @@ const { app, BrowserWindow, screen } = require("electron");
 const { spawn } = require("child_process");
 const path = require("path");
 
+const isDev = process.env.NODE_ENV !== "production";
 let mainWindow;
 let reactProcess;
 
@@ -17,6 +18,10 @@ function createWindow() {
       enableRemoteModule: false,
     },
   });
+
+  if (isDev) {
+    mainWindow.webContents.openDevTools();
+  }
   setTimeout(() => {
     mainWindow
       .loadURL("http://localhost:3000")
@@ -37,6 +42,8 @@ function createWindow() {
 app.on("ready", () => {
   console.log("Electron app is ready");
   createWindow();
+
+  mainWindow.on("closed", () => (mainWindow = null));
 });
 
 app.on("window-all-closed", () => {

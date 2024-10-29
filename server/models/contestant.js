@@ -1,109 +1,98 @@
+// models/Participants.js
+// TODO: Refactor all of the models so they fit what I have in the frontend.
 class Contestant {
-  // Create the contestants table with new fields
   static createTable(db) {
     const query = `
-      CREATE TABLE IF NOT EXISTS contestants (
+      CREATE TABLE IF NOT EXISTS Contestants (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        fullName TEXT NOT NULL,
-        gender TEXT,                   
-        arm TEXT,                       
-        tournamentId INTEGER,
-        weightCategory TEXT,            
-        division TEXT,           
-        FOREIGN KEY (tournamentId) REFERENCES tournaments(id)
+        TournamentId INTEGER,
+        Name TEXT,
+        Gender TEXT,
+        WeightKg REAL,
+        ArmPreference TEXT,
+        Division TEXT,
+        FOREIGN KEY (TournamentId) REFERENCES Tournaments(id)
       );
     `;
-    db.run(query);
+    db.run(query, (err) => {
+      if (err) {
+        console.error("Error creating contestants table:", err.message);
+      } else {
+        console.log("Contestants table created.");
+      }
+    });
   }
 
-  constructor(fullName, tournamentId, gender, arm, weightCategory, division) {
-    this.fullName = fullName;
+  constructor(tournamentId, name, gender, weightKg, armPreference, division) {
     this.tournamentId = tournamentId;
+    this.name = name;
     this.gender = gender;
-    this.arm = arm;
-    this.weightCategory = weightCategory;
+    this.weightKg = weightKg;
+    this.armPreference = armPreference;
     this.division = division;
   }
 
-  // Update the save method to include all new fields
   save(db, callback) {
     const query = `
-      INSERT INTO contestants (fullName, tournamentId, gender, arm, weightCategory, division)
+      INSERT INTO Contestants (TournamentId, Name, Gender, WeightKg, ArmPreference, Division)
       VALUES (?, ?, ?, ?, ?, ?);
     `;
     db.run(
       query,
       [
-        this.fullName,
         this.tournamentId,
+        this.name,
         this.gender,
-        this.arm,
-        this.weightCategory,
+        this.weightKg,
+        this.armPreference,
         this.division,
       ],
-      callback
+      function (err) {
+        callback(err, this.lastId);
+      }
     );
   }
 
-  static findByTournamentId(db, tournamentId, callback) {
-    db.all(
-      `SELECT * FROM contestants WHERE tournamentId = ?;`,
-      [tournamentId],
-      callback
-    );
+  static findAll(db, callback) {
+    const query = `SELECT * FROM Contestants;`;
+    db.all(query, [], callback);
   }
 
-  // Update the update method to allow updating all relevant fields
+  static findById(db, id, callback) {
+    const query = `SELECT * FROM Contestants WHERE id = ?;`;
+    db.get(query, [id], callback);
+  }
+
   static update(
     db,
     id,
-    { fullName, gender, arm, weightCategory, division },
+    { tournamentId, name, gender, weightKg, armPreference, division },
     callback
   ) {
+    const query = `
+      UPDATE Contestants
+      SET TournamentId = ?, Name = ?, Gender = ?, WeightKg = ?, ArmPreference = ?, Division = ?
+      WHERE id = ?;
+    `;
     db.run(
-      `UPDATE contestants SET fullName = ?, gender = ?, arm = ?, weightCategory = ?, division = ? WHERE id = ?;`,
-      [fullName, gender, arm, weightCategory, division, id],
-      callback
+      query,
+      [tournamentId, name, gender, weightKg, armPreference, division, id],
+      function (err) {
+        callback(err);
+      }
     );
   }
 
   static delete(db, id, callback) {
-    db.run(`DELETE FROM contestants WHERE id = ?;`, [id], callback);
+    const query = `DELETE FROM Contestants WHERE id = ?;`;
+    db.run(query, [id], function (err) {
+      callback(err);
+    });
   }
 
-  static deleteById(db, id, tournamentId, callback) {
-    // First, check if a contestant with the given ID exists for the specified tournament
-    db.get(
-      `SELECT * FROM contestants WHERE id = ? AND tournamentId = ?;`,
-      [id, tournamentId],
-      (err, row) => {
-        if (err) {
-          return callback(err);
-        }
-        if (!row) {
-          return callback(
-            new Error(
-              `Contestant with ID ${id} not found in tournament ${tournamentId}.`
-            )
-          );
-        }
-
-        // If contestant exists, delete it
-        db.run(
-          `DELETE FROM contestants WHERE id = ? AND tournamentId = ?;`,
-          [id, tournamentId],
-          (err) => {
-            if (err) {
-              return callback(err);
-            }
-            callback(
-              null,
-              `Contestant with ID ${id} deleted from tournament ${tournamentId}.`
-            );
-          }
-        );
-      }
-    );
+  static findByTournamentId(db, tournamentId, callback) {
+    const query = `SELECT * FROM Contestants WHERE TournamentId = ?;`;
+    db.all(query, [tournamentId], callback);
   }
 }
 

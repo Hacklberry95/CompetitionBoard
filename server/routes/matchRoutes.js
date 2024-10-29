@@ -1,7 +1,7 @@
 // routes/matchRoutes.js
 const express = require("express");
 const router = express.Router();
-const Match = require("../models/match");
+const Matches = require("../models/match");
 const path = require("path");
 
 const dbPath = path.join(__dirname, "../../db/tournament.db");
@@ -9,9 +9,25 @@ const db = new (require("sqlite3").verbose().Database)(dbPath);
 
 // Create a new match
 router.post("/matches", (req, res) => {
-  const { tournamentId, participant1, participant2, winner } = req.body;
-  const newMatch = new Match(tournamentId, participant1, participant2, winner);
-  newMatch.save(db, (err, matchId) => {
+  const {
+    bracketId,
+    roundNumber,
+    matchNumber,
+    participant1Id,
+    participant2Id,
+  } = req.body;
+
+  const match = new Matches(
+    bracketId,
+    roundNumber,
+    matchNumber,
+    participant1Id,
+    participant2Id,
+    null,
+    null
+  );
+
+  match.save(db, (err, lastId) => {
     if (err) {
       return res
         .status(500)
@@ -19,14 +35,33 @@ router.post("/matches", (req, res) => {
     }
     return res
       .status(201)
-      .json({ message: "Match created successfully!", id: matchId });
+      .json({ message: "Match created successfully!", id: lastId });
   });
 });
 
-// Get all matches for a tournament
-router.get("/matches/:tournamentId", (req, res) => {
-  const { tournamentId } = req.params;
-  Match.findByTournamentId(db, tournamentId, (err, matches) => {
+// Declare a winner of the match
+router.put("/matches/:id/winner", (req, res) => {
+  const matchId = req.params.id;
+  const { winnerId } = req.body;
+
+  if (!winnerId) {
+    return res.status(400).json({ message: "Winner ID is required." });
+  }
+
+  Matches.update(db, matchId, { winnerId }, (err) => {
+    if (err) {
+      return res
+        .status(500)
+        .json({ message: "Error updating match", error: err });
+    }
+    return res.json({ message: "Winner declared successfully!" });
+  });
+});
+
+// Get all matches for a specific bracket
+router.get("/matches/:bracketId", (req, res) => {
+  const { bracketId } = req.params;
+  Matches.findByBracketId(db, bracketId, (err, matches) => {
     if (err) {
       return res
         .status(500)
@@ -39,8 +74,27 @@ router.get("/matches/:tournamentId", (req, res) => {
 // Update match details
 router.put("/matches/:id", (req, res) => {
   const matchId = req.params.id;
-  const { participant1, participant2, winner } = req.body;
-  Match.update(db, matchId, { participant1, participant2, winner }, (err) => {
+  const {
+    bracketId,
+    roundNumber,
+    matchNumber,
+    participant1Id,
+    participant2Id,
+    winnerId,
+    loserId,
+  } = req.body;
+
+  const updates = {
+    bracketId,
+    roundNumber,
+    matchNumber,
+    participant1Id,
+    participant2Id,
+    winnerId,
+    loserId,
+  };
+
+  Matches.update(db, matchId, updates, (err) => {
     if (err) {
       return res
         .status(500)
@@ -53,7 +107,7 @@ router.put("/matches/:id", (req, res) => {
 // Delete a match
 router.delete("/matches/:id", (req, res) => {
   const matchId = req.params.id;
-  Match.delete(db, matchId, (err) => {
+  Matches.delete(db, matchId, (err) => {
     if (err) {
       return res
         .status(500)

@@ -12,9 +12,9 @@ const ViewTournamentsTab = () => {
   const [tournaments, setTournaments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
-    name: "",
-    date: "",
-    location: "",
+    Name: "",
+    Date: "",
+    Location: "",
   });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTournament, setSelectedTournament] = useState(null);
@@ -57,16 +57,17 @@ const ViewTournamentsTab = () => {
     e.preventDefault();
 
     // Check if all fields are filled
-    const { name, date, location } = formData;
-    if (!name || !date || !location) {
+    const { Name, Date, Location } = formData;
+    if (!Name || !Date || !Location) {
       showSnackbar("Please fill in all fields.", "warning");
       return;
     }
     try {
       const newTournament = await tournamentAPI.createTournament(formData);
+      console.log(formData);
       showSnackbar("Tournament created successfully!", "success");
       fetchTournaments();
-      setFormData({ name: "", date: "", location: "" });
+      setFormData({ Name: "", Date: "", Location: "" });
       setTournaments((prev) => [...prev, newTournament]); // Add the new tournament to the state
     } catch (error) {
       console.error("Error creating tournament:", error);
@@ -125,6 +126,7 @@ const ViewTournamentsTab = () => {
         tournamentId,
         contestantData
       );
+      console.log(tournamentId, contestantData);
       showSnackbar("Contestant added successfully!", "success");
       setSelectedTournament((prev) => ({
         ...prev,
@@ -162,23 +164,23 @@ const ViewTournamentsTab = () => {
           type="text"
           name="name"
           placeholder="Tournament Name"
-          value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          value={formData.Name}
+          onChange={(e) => setFormData({ ...formData, Name: e.target.value })}
         />
         <input
           type="date"
           name="date"
           placeholder="Tournament Date"
-          value={formData.date}
-          onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+          value={formData.Date}
+          onChange={(e) => setFormData({ ...formData, Date: e.target.value })}
         />
         <input
           type="text"
           name="location"
           placeholder="Location"
-          value={formData.location}
+          value={formData.Location}
           onChange={(e) =>
-            setFormData({ ...formData, location: e.target.value })
+            setFormData({ ...formData, Location: e.target.value })
           }
         />
         <button type="submit">Create Tournament</button>
@@ -201,9 +203,9 @@ const ViewTournamentsTab = () => {
             {tournaments.length > 0 ? (
               tournaments.map((tournament) => (
                 <tr key={tournament.id}>
-                  <td>{tournament.name}</td>
-                  <td>{new Date(tournament.date).toLocaleDateString()}</td>
-                  <td>{tournament.location}</td>
+                  <td>{tournament.Name}</td>
+                  <td>{new Date(tournament.Date).toLocaleDateString()}</td>
+                  <td>{tournament.Location}</td>
                   <td>
                     <Stack
                       spacing={2}

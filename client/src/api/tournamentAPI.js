@@ -55,6 +55,18 @@ const tournamentAPI = {
       throw error.response.data;
     }
   },
+  getGeneratedBrackets: async (tournamentId) => {
+    try {
+      const response = await axios.post(
+        `${API_URL}/${tournamentId}/generateBrackets`
+      );
+      return response.data.message;
+    } catch (error) {
+      return error.response?.data?.error || "Error generating brackets.";
+    } finally {
+      return false;
+    }
+  },
 };
 
 export default tournamentAPI;

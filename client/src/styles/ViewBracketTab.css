@@ -1,0 +1,41 @@
+.view-bracket-tab {
+  padding: 20px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Center the title */
+  position: relative; /* Allow dropdown to be positioned on the right */
+}
+
+h2 {
+  margin: 0;
+  font-size: 1.8rem;
+  color: #333;
+}
+
+.dropdown-container {
+  position: absolute;
+  right: 0; /* Aligns the dropdown to the right edge */
+}
+
+.dropdown-select {
+  padding: 8px;
+  font-size: 1rem;
+  border-radius: 5px;
+  border: 1px solid #ddd;
+  background-color: #fff;
+  color: #333;
+  transition: border-color 0.2s;
+}
+
+.dropdown-select:focus {
+  border-color: #007bff;
+  outline: none;
+}
+
+.dropdown-select:hover {
+  cursor: pointer;
+  border-color: #007bff;
+}

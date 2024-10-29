@@ -16,7 +16,7 @@
   background-color: #fdfdfd;
   padding: 30px;
   border-radius: 12px;
-  max-width: 800px; /* Increased width for more columns */
+  max-width: 800px;
   width: 100%;
   position: relative;
   box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.15);
@@ -51,15 +51,15 @@ h3 {
 }
 
 .add-contestant-form {
-  display: flex; /* Use flexbox */
-  flex-direction: column; /* Arrange items in a column */
-  align-items: center; /* Center items horizontally */
-  justify-content: center; /* Center items vertically */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .add-contestant-form input,
 .add-contestant-form select {
-  width: 70%;
+  width: 30%;
   padding: 10px;
   margin: 10px 0;
   font-size: 16px;
@@ -70,8 +70,8 @@ h3 {
 
 .add-contestant-form input:focus,
 .add-contestant-form select:focus {
-  border-color: #007bff; /* Change border color on focus */
-  outline: none; /* Remove default outline */
+  border-color: #007bff;
+  outline: none;
 }
 
 .add-contestant-form button {
@@ -103,10 +103,7 @@ ul {
 .contestants-header,
 .contestant-row {
   display: grid;
-  grid-template-columns: repeat(
-    5,
-    1fr
-  ); /* Five evenly spaced columns for Name, Weight, Arm, Category, and Actions */
+  grid-template-columns: repeat(5, 1fr);
   padding: 10px 15px;
   background-color: #f7f7f7;
   border-radius: 8px;
@@ -124,6 +121,7 @@ ul {
 .contestant-row {
   border: 1px solid #ddd;
   transition: background-color 0.3s ease;
+  overflow: hidden; /* Adjust overflow */
 }
 
 .contestant-row:hover {
@@ -141,11 +139,31 @@ ul {
   text-align: center;
 }
 
+.contestants-list {
+  max-height: 300px; /* Adjust the height as needed */
+  overflow-y: auto; /* Enable vertical scrolling */
+  padding: 10px; /* Add some padding */
+  border: 1px solid #ddd; /* Optional: border for better visibility */
+  border-radius: 8px; /* Optional: rounded corners */
+  background-color: #f9f9f9; /* Optional: background color */
+}
+
 h4 {
   margin-bottom: 0px;
 }
 
-/* Animation for modal fade-in */
+.dropdown-container-editModal {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  width: 100%;
+  margin: 10px 0;
+}
+
+.dropdown-container-editModal select {
+  width: 100%;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
