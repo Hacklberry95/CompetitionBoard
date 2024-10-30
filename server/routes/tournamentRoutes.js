@@ -82,57 +82,60 @@ router.delete("/tournaments/:id", (req, res) => {
   });
 });
 
-router.delete("/tournaments/:tournamentId/deleteAll", (req, res) => {
+router.delete("/tournaments/:tournamentId/deleteAll", async (req, res) => {
   const { tournamentId } = req.params;
 
-  // Create an array of deletion promises
-  const deletionPromises = [
-    new Promise((resolve, reject) => {
-      Match.deleteAll(db, (err) => {
-        if (err) {
-          return reject(err);
-        }
-        resolve();
-      });
-    }),
-    new Promise((resolve, reject) => {
-      Bracket.deleteAll(db, (err) => {
-        if (err) {
-          return reject(err);
-        }
-        resolve();
-      });
-    }),
-    new Promise((resolve, reject) => {
-      BracketEntries.deleteAll(db, (err) => {
-        if (err) {
-          return reject(err);
-        }
-        resolve();
-      });
-    }),
-  ];
-
-  // Execute all deletion promises
-  Promise.all(deletionPromises)
-    .then(() => {
-      return res.json({
-        message:
-          "All matches, brackets, and bracket entries deleted successfully.",
-      });
-    })
-    .catch((err) => {
+  try {
+    const bracketEntriesCount = await BracketEntries.count(db);
+    if (bracketEntriesCount === 0) {
       return res
-        .status(500)
-        .json({ message: "Error deleting records", error: err });
+        .status(404)
+        .json({ message: "No BracketEntries found to delete." });
+    }
+    const deletionPromises = [
+      new Promise((resolve, reject) => {
+        Match.deleteAll(db, (err) => {
+          if (err) {
+            return reject(err);
+          }
+          resolve();
+        });
+      }),
+      new Promise((resolve, reject) => {
+        Bracket.deleteAll(db, (err) => {
+          if (err) {
+            return reject(err);
+          }
+          resolve();
+        });
+      }),
+      new Promise((resolve, reject) => {
+        BracketEntries.deleteAll(db, (err) => {
+          if (err) {
+            return reject(err);
+          }
+          resolve();
+        });
+      }),
+    ];
+
+    await Promise.all(deletionPromises);
+    return res.json({
+      message:
+        "All matches, brackets, and bracket entries deleted successfully.",
     });
+  } catch (err) {
+    return res
+      .status(500)
+      .json({ message: "Error deleting records", error: err });
+  }
 });
 
 // Add a contestant to a tournament
 router.post("/tournaments/:tournamentId/contestants", (req, res) => {
   const { tournamentId } = req.params;
   const { Name, Gender, WeightKg, ArmPreference, Division } = req.body;
-  console.log(req.body);
+  
   const newContestant = new Contestant(
     tournamentId,
     Name,
@@ -156,9 +159,6 @@ router.post("/tournaments/:tournamentId/contestants", (req, res) => {
 router.post("/tournaments/:tournamentId/contestants", (req, res) => {
   const { tournamentId } = req.params;
   const { Name, Gender, WeightKg, ArmPreference, Division } = req.body;
-
-  // Log the incoming data
-  console.log(req.body);
 
   const newContestant = new Contestant(
     tournamentId,
@@ -182,29 +182,30 @@ router.post("/tournaments/:tournamentId/contestants", (req, res) => {
 // Endpoint to generate brackets and matches for a tournament
 router.post("/tournaments/:tournamentId/generateBrackets", (req, res) => {
   const { tournamentId } = req.params;
-  const existingContestantIds = new Set();
 
+  const existingContestantIds = new Set();
   const fetchExistingContestants = (contestants) => {
-    return Promise.all(
-      contestants.map(
-        (contestant) =>
-          new Promise((resolve, reject) => {
-            Match.findByParticipantId(db, contestant.id, (err, matches) => {
-              if (err)
-                return reject(new Error("Database error checking matches"));
-              if (matches.length > 0) existingContestantIds.add(contestant.id);
-              resolve();
-            });
-          })
-      )
-    );
+    const checkPromises = contestants.map((contestant) => {
+      return new Promise((resolve, reject) => {
+        Match.findByParticipantId(db, contestant.id, (err, matches) => {
+          if (err) {
+            return reject(err);
+          }
+          if (matches.length > 0) {
+            existingContestantIds.add(contestant.id);
+          }
+          resolve();
+        });
+      });
+    });
+    return Promise.all(checkPromises);
   };
 
   Contestant.findByTournamentId(db, tournamentId, (err, contestants) => {
     if (err) {
-      console.error("Fetch contestants error:", err);
       return res.status(500).json({ error: "Error fetching contestants." });
     }
+
     if (contestants.length === 0) {
       return res
         .status(400)
@@ -218,23 +219,27 @@ router.post("/tournaments/:tournamentId/generateBrackets", (req, res) => {
         );
 
         if (newContestants.length === 0) {
-          console.log("All contestants are already in matches.");
-          return res
-            .status(400)
-            .json({ error: "All contestants are already in matches." });
+          return res.status(400).json({
+            error:
+              "Cannot generate brackets. All contestants are already in matches.",
+          });
         }
 
         const brackets = {};
         newContestants.forEach((contestant) => {
-          const key = `${contestant.Division}-${contestant.Gender}-${
-            contestant.ArmPreference
-          }-${contestant.WeightKg > 86 ? "+86" : "-86"}`;
+          const weightClass =
+            contestant.WeightKg < 0
+              ? `${Math.abs(contestant.WeightKg)}-`
+              : `${contestant.WeightKg}`;
+          const key = `${contestant.Division}|${contestant.Gender}|${contestant.ArmPreference}|${weightClass}`;
+
           if (!brackets[key]) brackets[key] = [];
           brackets[key].push(contestant);
         });
 
         const bracketPromises = Object.keys(brackets).map((key) => {
-          const [division, gender, arm, weightClass] = key.split("-");
+          const [division, gender, arm, weightClass] = key.split("|");
+
           return new Promise((resolve, reject) => {
             Bracket.create(
               db,
@@ -245,10 +250,9 @@ router.post("/tournaments/:tournamentId/generateBrackets", (req, res) => {
               weightClass,
               (err, bracketId) => {
                 if (err) return reject(new Error("Error creating bracket"));
-
                 const bracketEntryStmt = db.prepare(`
-                  INSERT INTO BracketEntries (BracketID, ContestantId) VALUES (?, ?)
-                `);
+            INSERT INTO BracketEntries (BracketID, ContestantId) VALUES (?, ?)
+        `);
                 brackets[key].forEach((contestant) => {
                   bracketEntryStmt.run(bracketId, contestant.id);
                 });
@@ -270,8 +274,7 @@ router.post("/tournaments/:tournamentId/generateBrackets", (req, res) => {
                           shuffledParticipants[i].id,
                           shuffledParticipants[i + 1].id,
                           (err) => {
-                            if (err)
-                              return reject(new Error("Error creating match"));
+                            if (err) return reject(err);
                             resolve();
                           }
                         );
@@ -289,23 +292,20 @@ router.post("/tournaments/:tournamentId/generateBrackets", (req, res) => {
         });
 
         Promise.all(bracketPromises)
-          .then(() => {
-            console.log("Brackets and matches generated successfully.");
+          .then(() =>
             res.status(200).json({
               message: "Brackets and matches generated successfully.",
-            });
-          })
+            })
+          )
           .catch((err) => {
-            console.error("Bracket generation error:", err.message);
-            res.status(500).json({
+            return res.status(500).json({
               error: "Error generating brackets or matches.",
               details: err.message,
             });
           });
       })
       .catch((err) => {
-        console.error("Existing contestants check error:", err.message);
-        res.status(500).json({
+        return res.status(500).json({
           error: "Error checking existing contestants.",
           details: err.message,
         });

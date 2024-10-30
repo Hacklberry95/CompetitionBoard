@@ -141,9 +141,7 @@ class Matches {
   }
   static deleteAll(db, callback) {
     const query = `DELETE FROM Matches;`;
-    db.run(query, function (err) {
-      callback(err);
-    });
+    db.all(query, callback);
   }
 
   static findByBracketId(db, bracketId, callback) {

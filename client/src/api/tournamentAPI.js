@@ -70,6 +70,18 @@ const tournamentAPI = {
       );
     }
   },
+  deleteGenerateBrackets: async (tournamentId) => {
+    try {
+      const response = await axios.delete(`${API_URL}/${tournamentId}/deleteAll`);
+      return response;
+    }catch(error) {
+      return (
+      error.response || {
+          status: 500,
+          data: { error: "Error deleting brackets." },
+    }
+    );
+  }
+},
 };
-
 export default tournamentAPI;

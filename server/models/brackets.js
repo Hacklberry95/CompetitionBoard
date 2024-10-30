@@ -114,9 +114,7 @@ class Brackets {
 
   static deleteAll(db, callback) {
     const query = `DELETE FROM Brackets;`;
-    db.run(query, function (err) {
-      callback(err);
-    });
+    db.run(query, callback);
   }
 }
 

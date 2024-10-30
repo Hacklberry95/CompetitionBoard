@@ -74,7 +74,7 @@ const ViewTournamentsTab = () => {
       showSnackbar("Failed to create tournament.", "error");
     }
   };
-  // Function for the delete button for deleting tournaments
+  // Confirmation for the delete button for deleting tournaments
   const deleteTournament = (tournament) => {
     setSelectedTournament(tournament);
     setIsDialogOpen(true); // Open the dialog

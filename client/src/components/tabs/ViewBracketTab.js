@@ -11,8 +11,8 @@ const ViewBracketTab = ({ selectedTournament }) => {
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
-  const [brackets, setBrackets] = useState([]); // Store brackets here
-  const [selectedBracket, setSelectedBracket] = useState(null); // Selected bracket
+  const [brackets, setBrackets] = useState([]); 
+  const [selectedBracket, setSelectedBracket] = useState(null); 
   const { showSnackbar } = useAlert();
 
   const fetchBrackets = async () => {
@@ -21,9 +21,10 @@ const ViewBracketTab = ({ selectedTournament }) => {
       const bracketData = await bracketAPI.getBracketsByTournamentId(
         selectedTournament
       );
+      console.log("Fetched brackets: ", bracketData);
       setBrackets(bracketData);
       if (bracketData.length > 0) {
-        setSelectedBracket(bracketData[0].id); // Select the first bracket by default
+        setSelectedBracket(bracketData[0].id);
       }
     } catch (error) {
       console.error("Error fetching brackets:", error);
@@ -32,7 +33,7 @@ const ViewBracketTab = ({ selectedTournament }) => {
   };
 
   const fetchMatches = async () => {
-    if (!selectedBracket) return; // Only fetch matches if a bracket is selected
+    if (!selectedBracket) return; 
     setLoading(true);
     try {
       const matchData = await matchAPI.getMatchesByBracketId(selectedBracket);
@@ -59,7 +60,7 @@ const ViewBracketTab = ({ selectedTournament }) => {
           response.data.message || "Brackets generated successfully.",
           "success"
         );
-        fetchBrackets(); // Fetch brackets again after generating
+        fetchBrackets(); 
       } else {
         showSnackbar(response.data.error || "An error occurred.", "error");
       }
@@ -73,12 +74,43 @@ const ViewBracketTab = ({ selectedTournament }) => {
     }
   };
 
-  // Effect to fetch brackets and matches whenever selectedTournament changes
+  const handleDeleteBrackets = async () => {
+    if (!selectedTournament) return;
+
+    try {
+      const response = await tournamentAPI.deleteGenerateBrackets(
+        selectedTournament
+      );
+
+      if (response.status === 200) {
+        showSnackbar(
+          response.data.message || "Brackets deleted successfully.",
+          "success"
+        );
+        fetchBrackets();
+        fetchMatches();
+      } else if (response.status === 404) {
+        showSnackbar(
+          response.data.message || "No BracketEntries found to delete.",
+          "error"
+        );
+      } else {
+        showSnackbar(response.data.error || "An error occurred.", "error");
+      }
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message || "Failed to delete the brackets!";
+      console.error("Error response:", error);
+      showSnackbar(errorMessage, "error");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   useEffect(() => {
     fetchBrackets();
   }, [selectedTournament]);
 
-  // Effect to fetch matches whenever selectedBracket changes
   useEffect(() => {
     fetchMatches();
   }, [selectedBracket]);
@@ -97,7 +129,7 @@ const ViewBracketTab = ({ selectedTournament }) => {
             >
               {brackets.map((bracket) => (
                 <option key={bracket.id} value={bracket.id}>
-                  {bracket.Division}
+                  {bracket.Division} | {bracket.Gender} | {bracket.WeightClass}
                 </option>
               ))}
             </select>
@@ -112,6 +144,9 @@ const ViewBracketTab = ({ selectedTournament }) => {
           disabled={generating}
         >
           {generating ? "Generating Brackets..." : "Generate Brackets"}
+        </button>
+        <button className="button" onClick={handleDeleteBrackets}>
+          Delete All Brackets
         </button>
       </div>
 

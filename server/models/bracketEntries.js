@@ -63,15 +63,11 @@ class BracketEntries {
   }
   static deleteAll(db, callback) {
     const query = `DELETE FROM BracketEntries;`;
-    db.run(query, function (err) {
-      callback(err);
-    });
+    db.all(query, callback);
   }
   static deleteByBracketId(db, bracketId, callback) {
     const query = `DELETE FROM BracketEntries WHERE id = ?;`;
-    db.run(query, [bracketId], function (err) {
-      callback(err);
-    });
+    db.all(query, [bracketId], callback);
   }
 
   static findByBracketId(db, bracketId, callback) {
@@ -82,6 +78,17 @@ class BracketEntries {
   static findBycontestantId(db, contestantId, callback) {
     const query = `SELECT * FROM BracketEntries WHERE contestantId = ?;`;
     db.all(query, [contestantId], callback);
+  }
+  static count(db) {
+    return new Promise((resolve, reject) => {
+      const query = "SELECT COUNT(*) AS count FROM BracketEntries";
+      db.get(query, (err, row) => {
+        if (err) {
+          return reject(err);
+        }
+        resolve(row.count);
+      });
+    });
   }
 }
 
