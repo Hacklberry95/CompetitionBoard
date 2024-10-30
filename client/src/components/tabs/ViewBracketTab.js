@@ -6,14 +6,16 @@ import bracketAPI from "../../api/bracketAPI";
 import tournamentAPI from "../../api/tournamentAPI";
 import "../../styles/ViewBracketTab.css";
 import { useAlert } from "../../context/AlertContext";
+import ConfirmationDialog from "../helpers/ConfirmationDialog";
 
 const ViewBracketTab = ({ selectedTournament }) => {
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
-  const [brackets, setBrackets] = useState([]); 
-  const [selectedBracket, setSelectedBracket] = useState(null); 
+  const [brackets, setBrackets] = useState([]);
+  const [selectedBracket, setSelectedBracket] = useState(null);
   const { showSnackbar } = useAlert();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const fetchBrackets = async () => {
     if (!selectedTournament) return;
@@ -33,7 +35,7 @@ const ViewBracketTab = ({ selectedTournament }) => {
   };
 
   const fetchMatches = async () => {
-    if (!selectedBracket) return; 
+    if (!selectedBracket) return;
     setLoading(true);
     try {
       const matchData = await matchAPI.getMatchesByBracketId(selectedBracket);
@@ -60,7 +62,7 @@ const ViewBracketTab = ({ selectedTournament }) => {
           response.data.message || "Brackets generated successfully.",
           "success"
         );
-        fetchBrackets(); 
+        fetchBrackets();
       } else {
         showSnackbar(response.data.error || "An error occurred.", "error");
       }
@@ -72,6 +74,13 @@ const ViewBracketTab = ({ selectedTournament }) => {
     } finally {
       setGenerating(false);
     }
+  };
+  // <================ BRACKET DELETE FUNCTIONS ================>
+  const deleteBrackets = () => {
+    setIsDialogOpen(true);
+  };
+  const closeDialog = () => {
+    setIsDialogOpen(false);
   };
 
   const handleDeleteBrackets = async () => {
@@ -87,8 +96,8 @@ const ViewBracketTab = ({ selectedTournament }) => {
           response.data.message || "Brackets deleted successfully.",
           "success"
         );
-        fetchBrackets();
-        fetchMatches();
+            fetchBrackets();
+            fetchMatches();
       } else if (response.status === 404) {
         showSnackbar(
           response.data.message || "No BracketEntries found to delete.",
@@ -145,7 +154,7 @@ const ViewBracketTab = ({ selectedTournament }) => {
         >
           {generating ? "Generating Brackets..." : "Generate Brackets"}
         </button>
-        <button className="button" onClick={handleDeleteBrackets}>
+        <button className="button" onClick={deleteBrackets}>
           Delete All Brackets
         </button>
       </div>
@@ -156,6 +165,12 @@ const ViewBracketTab = ({ selectedTournament }) => {
       )}
 
       <BracketVisualizer matches={matches} />
+      <ConfirmationDialog
+        open={isDialogOpen}
+        onClose={closeDialog}
+        onConfirm={handleDeleteBrackets}
+        message={`Are you sure you want to delete ALL of the brackets?`}
+      />
     </div>
   );
 };
