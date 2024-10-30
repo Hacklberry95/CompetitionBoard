@@ -21,6 +21,23 @@ router.get("/contestants/tournament/:tournamentId", (req, res) => {
     return res.json(contestants);
   });
 });
+// Get contestant by Id
+router.get("/contestants/:id", (req, res) => {
+  const { id } = req.params;
+
+  Contestant.findById(db, id, (err, entry) => {
+    if (err) {
+      console.error("Error fetching bracket entry:", err.message);
+      return res
+        .status(500)
+        .json({ message: "Error fetching bracket entry", error: err });
+    }
+    if (!entry) {
+      return res.status(404).json({ message: "Bracket entry not found" });
+    }
+    return res.json(entry);
+  });
+});
 
 // Update a contestant
 router.put("/contestants/:id", (req, res) => {

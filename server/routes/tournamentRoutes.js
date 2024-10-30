@@ -182,97 +182,134 @@ router.post("/tournaments/:tournamentId/contestants", (req, res) => {
 // Endpoint to generate brackets and matches for a tournament
 router.post("/tournaments/:tournamentId/generateBrackets", (req, res) => {
   const { tournamentId } = req.params;
+  const existingContestantIds = new Set();
 
-  // Fetch contestants for the tournament
+  const fetchExistingContestants = (contestants) => {
+    return Promise.all(
+      contestants.map(
+        (contestant) =>
+          new Promise((resolve, reject) => {
+            Match.findByParticipantId(db, contestant.id, (err, matches) => {
+              if (err)
+                return reject(new Error("Database error checking matches"));
+              if (matches.length > 0) existingContestantIds.add(contestant.id);
+              resolve();
+            });
+          })
+      )
+    );
+  };
+
   Contestant.findByTournamentId(db, tournamentId, (err, contestants) => {
     if (err) {
+      console.error("Fetch contestants error:", err);
       return res.status(500).json({ error: "Error fetching contestants." });
     }
-
     if (contestants.length === 0) {
       return res
         .status(400)
-        .json({ error: "No contestants found for this tournament." }); // Updated message
+        .json({ error: "No contestants found for this tournament." });
     }
 
-    // Group contestants by bracket criteria
-    const brackets = {};
-    contestants.forEach((contestant) => {
-      const key = `${contestant.Division}-${contestant.Gender}-${
-        contestant.ArmPreference
-      }-${contestant.WeightKg > 86 ? "+86" : "-86"}`;
-      if (!brackets[key]) brackets[key] = [];
-      brackets[key].push(contestant);
-    });
-
-    // Generate brackets and matches
-    const bracketPromises = Object.keys(brackets).map((key) => {
-      const [division, gender, arm, weightClass] = key.split("-");
-
-      return new Promise((resolve, reject) => {
-        // Insert a new bracket
-        Bracket.create(
-          db,
-          tournamentId,
-          division,
-          gender,
-          arm,
-          weightClass,
-          (err, bracketId) => {
-            if (err) return reject(err);
-
-            // Add contestants to the bracket
-            const bracketEntryStmt = db.prepare(`
-              INSERT INTO BracketEntries (BracketID, ContestantId) VALUES (?, ?)
-            `);
-            brackets[key].forEach((contestant) => {
-              bracketEntryStmt.run(bracketId, contestant.id);
-            });
-
-            // Randomize contestants and create matches
-            const shuffledParticipants = brackets[key].sort(
-              () => 0.5 - Math.random()
-            );
-            const matchPromises = [];
-
-            for (let i = 0; i < shuffledParticipants.length; i += 2) {
-              if (i + 1 < shuffledParticipants.length) {
-                matchPromises.push(
-                  new Promise((resolve, reject) => {
-                    Match.create(
-                      db,
-                      bracketId,
-                      1,
-                      Math.floor(i / 2) + 1,
-                      shuffledParticipants[i].id, // Change to contestant id
-                      shuffledParticipants[i + 1].id, // Change to contestant id
-                      (err) => {
-                        if (err) return reject(err);
-                        resolve();
-                      }
-                    );
-                  })
-                );
-              }
-            }
-            Promise.all(matchPromises)
-              .then(() => resolve())
-              .catch(reject);
-          }
+    fetchExistingContestants(contestants)
+      .then(() => {
+        const newContestants = contestants.filter(
+          (contestant) => !existingContestantIds.has(contestant.id)
         );
-      });
-    });
 
-    Promise.all(bracketPromises)
-      .then(() =>
-        res.json({ message: "Brackets and matches generated successfully." })
-      )
-      .catch((err) =>
+        if (newContestants.length === 0) {
+          console.log("All contestants are already in matches.");
+          return res
+            .status(400)
+            .json({ error: "All contestants are already in matches." });
+        }
+
+        const brackets = {};
+        newContestants.forEach((contestant) => {
+          const key = `${contestant.Division}-${contestant.Gender}-${
+            contestant.ArmPreference
+          }-${contestant.WeightKg > 86 ? "+86" : "-86"}`;
+          if (!brackets[key]) brackets[key] = [];
+          brackets[key].push(contestant);
+        });
+
+        const bracketPromises = Object.keys(brackets).map((key) => {
+          const [division, gender, arm, weightClass] = key.split("-");
+          return new Promise((resolve, reject) => {
+            Bracket.create(
+              db,
+              tournamentId,
+              division,
+              gender,
+              arm,
+              weightClass,
+              (err, bracketId) => {
+                if (err) return reject(new Error("Error creating bracket"));
+
+                const bracketEntryStmt = db.prepare(`
+                  INSERT INTO BracketEntries (BracketID, ContestantId) VALUES (?, ?)
+                `);
+                brackets[key].forEach((contestant) => {
+                  bracketEntryStmt.run(bracketId, contestant.id);
+                });
+
+                const shuffledParticipants = brackets[key].sort(
+                  () => 0.5 - Math.random()
+                );
+                const matchPromises = [];
+
+                for (let i = 0; i < shuffledParticipants.length; i += 2) {
+                  if (i + 1 < shuffledParticipants.length) {
+                    matchPromises.push(
+                      new Promise((resolve, reject) => {
+                        Match.create(
+                          db,
+                          bracketId,
+                          1,
+                          Math.floor(i / 2) + 1,
+                          shuffledParticipants[i].id,
+                          shuffledParticipants[i + 1].id,
+                          (err) => {
+                            if (err)
+                              return reject(new Error("Error creating match"));
+                            resolve();
+                          }
+                        );
+                      })
+                    );
+                  }
+                }
+
+                Promise.all(matchPromises)
+                  .then(() => resolve())
+                  .catch(reject);
+              }
+            );
+          });
+        });
+
+        Promise.all(bracketPromises)
+          .then(() => {
+            console.log("Brackets and matches generated successfully.");
+            res.status(200).json({
+              message: "Brackets and matches generated successfully.",
+            });
+          })
+          .catch((err) => {
+            console.error("Bracket generation error:", err.message);
+            res.status(500).json({
+              error: "Error generating brackets or matches.",
+              details: err.message,
+            });
+          });
+      })
+      .catch((err) => {
+        console.error("Existing contestants check error:", err.message);
         res.status(500).json({
-          error: "Error generating brackets or matches.",
+          error: "Error checking existing contestants.",
           details: err.message,
-        })
-      );
+        });
+      });
   });
 });
 

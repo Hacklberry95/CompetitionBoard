@@ -158,6 +158,13 @@ class Matches {
     `;
     db.all(query, [participantId, participantId], callback);
   }
+  static findByContestantId(db, contestantId, callback) {
+    const query = `
+      SELECT * FROM Matches
+      WHERE Participant1Id = ? OR Participant2Id = ?;
+    `;
+    db.all(query, [contestantId, contestantId], callback);
+  }
 }
 
 module.exports = Matches;

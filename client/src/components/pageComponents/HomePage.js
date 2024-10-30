@@ -81,6 +81,12 @@ const Homepage = () => {
   return (
     <div className="homepage">
       <nav>
+        <div className="tab-buttons">
+          <button onClick={() => setActiveTab("viewTournaments")}>
+            Tournaments
+          </button>
+          <button onClick={() => setActiveTab("bracketViewer")}>Bracket</button>
+        </div>
         <div className="dropdown-container">
           <select
             value={selectedTournament || ""}
@@ -94,10 +100,6 @@ const Homepage = () => {
             ))}
           </select>
         </div>
-        <button onClick={() => setActiveTab("viewTournaments")}>
-          Tournaments
-        </button>
-        <button onClick={() => setActiveTab("bracketViewer")}>Bracket</button>
       </nav>
       <div className="tab-content">{renderTabContent()}</div>
     </div>

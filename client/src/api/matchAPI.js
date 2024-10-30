@@ -21,6 +21,15 @@ const matchAPI = {
       throw error.response.data;
     }
   },
+  getMatchesByBracketId: async (bracketId) => {
+    try {
+      const response = await axios.get(`${API_URL}/${bracketId}`);
+      console.log("API response for match:", response.data);
+      return response.data;
+    } catch (error) {
+      throw error.response.data;
+    }
+  },
   updateMatch: async (id, matchData) => {
     try {
       const response = await axios.put(`${API_URL}/${id}`, matchData);

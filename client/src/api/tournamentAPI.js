@@ -60,11 +60,14 @@ const tournamentAPI = {
       const response = await axios.post(
         `${API_URL}/${tournamentId}/generateBrackets`
       );
-      return response.data.message;
+      return response;
     } catch (error) {
-      return error.response?.data?.error || "Error generating brackets.";
-    } finally {
-      return false;
+      return (
+        error.response || {
+          status: 500,
+          data: { error: "Error generating brackets." },
+        }
+      );
     }
   },
 };
