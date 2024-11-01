@@ -29,7 +29,7 @@ const ViewTournamentsTab = () => {
   const [formData, setFormData] = useState({
     Name: "",
     Date: "",
-    Location: "", // Added Location to form data
+    Location: "",
   });
 
   useEffect(() => {
@@ -58,8 +58,8 @@ const ViewTournamentsTab = () => {
     try {
       await dispatch(createTournament(formData)).unwrap();
       showSnackbar("Tournament created successfully!", "success");
-      setFormData({ Name: "", Date: "", Location: "" }); // Reset form data
-      dispatch(fetchAllTournaments()); // Refresh the tournaments list
+      setFormData({ Name: "", Date: "", Location: "" });
+      dispatch(fetchAllTournaments());
     } catch (error) {
       console.error("Error creating tournament:", error);
       showSnackbar("Failed to create tournament.", "error");
@@ -133,7 +133,7 @@ const ViewTournamentsTab = () => {
             <tr>
               <th>Name</th>
               <th>Date</th>
-              <th>Location</th> {/* Add Location to the header */}
+              <th>Location</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -142,7 +142,7 @@ const ViewTournamentsTab = () => {
               <tr key={tournament.id}>
                 <td>{tournament.Name}</td>
                 <td>{new Date(tournament.Date).toLocaleDateString()}</td>
-                <td>{tournament.Location}</td> {/* Display Location */}
+                <td>{tournament.Location}</td>
                 <td>
                   <Stack direction="row">
                     <IconButton onClick={() => openModal(tournament)}>

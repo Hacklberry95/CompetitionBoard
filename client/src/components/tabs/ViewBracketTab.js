@@ -1,52 +1,45 @@
 // src/tabs/ViewBracketTab.js
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import BracketVisualizer from "../tabComponents/BracketVisualizer";
-import matchAPI from "../../api/matchAPI";
-import bracketAPI from "../../api/bracketAPI";
-import tournamentAPI from "../../api/tournamentAPI";
+import matchAPI from "../../api/matchAPI"; // This might be refactored if needed
+import tournamentAPI from "../../api/tournamentAPI"; // Keep for generating brackets
 import "../../styles/ViewBracketTab.css";
 import { useAlert } from "../../context/AlertContext";
 import ConfirmationDialog from "../helpers/ConfirmationDialog";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  fetchBracketsByTournamentId,
+  deleteAllBrackets,
+  clearBrackets,
+} from "../../redux/slices/bracketSlice";
+import { fetchMatchesByBracketId } from "../../redux/slices/matchSlice"; // Assuming this exists
 
 const ViewBracketTab = ({ selectedTournament }) => {
-  const [matches, setMatches] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [generating, setGenerating] = useState(false);
-  const [brackets, setBrackets] = useState([]);
-  const [selectedBracket, setSelectedBracket] = useState(null);
+  const dispatch = useDispatch();
   const { showSnackbar } = useAlert();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const fetchBrackets = async () => {
-    if (!selectedTournament) return;
-    try {
-      const bracketData = await bracketAPI.getBracketsByTournamentId(
-        selectedTournament
-      );
-      console.log("Fetched brackets: ", bracketData);
-      setBrackets(bracketData);
-      if (bracketData.length > 0) {
-        setSelectedBracket(bracketData[0].id);
-      }
-    } catch (error) {
-      console.error("Error fetching brackets:", error);
-      showSnackbar(error?.data?.error || "Failed to fetch brackets.", "error");
-    }
-  };
+  const brackets = useSelector((state) => state.brackets.brackets);
+  const loadingBrackets = useSelector((state) => state.brackets.loading);
+  const matches = useSelector((state) => state.matches.matches); // Assuming this is already set up
+  const [selectedBracket, setSelectedBracket] = React.useState(null);
+  const [generating, setGenerating] = React.useState(false);
+  const [isDialogOpen, setIsDialogOpen] = React.useState(false);
 
-  const fetchMatches = async () => {
-    if (!selectedBracket) return;
-    setLoading(true);
-    try {
-      const matchData = await matchAPI.getMatchesByBracketId(selectedBracket);
-      console.log("Match Data:", matchData);
-      setMatches(matchData);
-    } catch (error) {
-      console.error("Error fetching matches:", error);
-    } finally {
-      setLoading(false);
+  // Fetch brackets when selectedTournament changes
+  useEffect(() => {
+    if (selectedTournament) {
+      dispatch(fetchBracketsByTournamentId(selectedTournament));
+    } else {
+      dispatch(clearBrackets());
     }
-  };
+  }, [selectedTournament, dispatch]);
+
+  // Fetch matches when selectedBracket changes
+  useEffect(() => {
+    if (selectedBracket) {
+      dispatch(fetchMatchesByBracketId(selectedBracket)); // Assuming you have this function
+    }
+  }, [selectedBracket, dispatch]);
 
   const handleGenerateBrackets = async () => {
     if (!selectedTournament) return;
@@ -62,7 +55,7 @@ const ViewBracketTab = ({ selectedTournament }) => {
           response.data.message || "Brackets generated successfully.",
           "success"
         );
-        fetchBrackets();
+        dispatch(fetchBracketsByTournamentId(selectedTournament)); // Re-fetch brackets
       } else {
         showSnackbar(response.data.error || "An error occurred.", "error");
       }
@@ -75,10 +68,11 @@ const ViewBracketTab = ({ selectedTournament }) => {
       setGenerating(false);
     }
   };
-  // <================ BRACKET DELETE FUNCTIONS ================>
+
   const deleteBrackets = () => {
     setIsDialogOpen(true);
   };
+
   const closeDialog = () => {
     setIsDialogOpen(false);
   };
@@ -87,42 +81,29 @@ const ViewBracketTab = ({ selectedTournament }) => {
     if (!selectedTournament) return;
 
     try {
-      const response = await tournamentAPI.deleteGenerateBrackets(
-        selectedTournament
-      );
+      const response = await dispatch(deleteAllBrackets(selectedTournament));
 
-      if (response.status === 200) {
+      if (response.payload.status === 200) {
         showSnackbar(
-          response.data.message || "Brackets deleted successfully.",
+          response.payload.message || "Brackets deleted successfully.",
           "success"
         );
-        fetchBrackets();
-        fetchMatches();
-      } else if (response.status === 404) {
+        dispatch(fetchBracketsByTournamentId(selectedTournament)); // Re-fetch brackets
+      } else if (response.payload.status === 404) {
         showSnackbar(
-          response.data.message || "No BracketEntries found to delete.",
+          response.payload.message || "No BracketEntries found to delete.",
           "error"
         );
       } else {
-        showSnackbar(response.data.error || "An error occurred.", "error");
+        showSnackbar(response.payload.error || "An error occurred.", "error");
       }
     } catch (error) {
       const errorMessage =
         error.response?.data?.message || "Failed to delete the brackets!";
       console.error("Error response:", error);
       showSnackbar(errorMessage, "error");
-    } finally {
-      setGenerating(false);
     }
   };
-
-  useEffect(() => {
-    fetchBrackets();
-  }, [selectedTournament]);
-
-  useEffect(() => {
-    fetchMatches();
-  }, [selectedBracket]);
 
   return (
     <div className="view-bracket-tab">
@@ -159,8 +140,8 @@ const ViewBracketTab = ({ selectedTournament }) => {
         </button>
       </div>
 
-      {loading && <p>Loading matches...</p>}
-      {!loading && matches.length === 0 && (
+      {loadingBrackets && <p>Loading matches...</p>}
+      {!loadingBrackets && matches.length === 0 && (
         <p>No matches available for this tournament.</p>
       )}
 

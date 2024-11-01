@@ -82,6 +82,7 @@ router.delete("/tournaments/:id", (req, res) => {
   });
 });
 
+// DELETE ALL BRACKETS, BRACKETENTRIES AND MATCHES FROM A TOURNAMENT
 router.delete("/tournaments/:tournamentId/deleteAll", async (req, res) => {
   const { tournamentId } = req.params;
 
@@ -129,30 +130,6 @@ router.delete("/tournaments/:tournamentId/deleteAll", async (req, res) => {
       .status(500)
       .json({ message: "Error deleting records", error: err });
   }
-});
-
-// Add a contestant to a tournament
-router.post("/tournaments/:tournamentId/contestants", (req, res) => {
-  const { tournamentId } = req.params;
-  const { Name, Gender, WeightKg, ArmPreference, Division } = req.body;
-
-  const newContestant = new Contestant(
-    tournamentId,
-    Name,
-    Gender,
-    WeightKg,
-    ArmPreference,
-    Division
-  );
-
-  newContestant.save(db, (err) => {
-    if (err) {
-      return res
-        .status(500)
-        .json({ message: "Error adding contestant", error: err });
-    }
-    return res.status(201).json({ message: "Contestant added successfully!" });
-  });
 });
 
 // Endpoint to generate brackets and matches for a tournament
@@ -287,6 +264,30 @@ router.post("/tournaments/:tournamentId/generateBrackets", (req, res) => {
         });
       });
   });
+
+  // // Add a contestant to a tournament
+  // router.post("/tournaments/:tournamentId/contestants", (req, res) => {
+  //   const { tournamentId } = req.params;
+  //   const { Name, Gender, WeightKg, ArmPreference, Division } = req.body;
+
+  //   const newContestant = new Contestant(
+  //     tournamentId,
+  //     Name,
+  //     Gender,
+  //     WeightKg,
+  //     ArmPreference,
+  //     Division
+  //   );
+
+  //   newContestant.save(db, (err) => {
+  //     if (err) {
+  //       return res
+  //         .status(500)
+  //         .json({ message: "Error adding contestant", error: err });
+  //     }
+  //     return res.status(201).json({ message: "Contestant added successfully!" });
+  //   });
+  // });
 });
 
 module.exports = router;
