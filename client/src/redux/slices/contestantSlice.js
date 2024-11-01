@@ -2,8 +2,10 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import contestantsAPI from "../../api/contestantsAPI";
 
+// Initial State
 const initialState = {
   contestants: [],
+  contestantsMap: {},
   selectedContestant: null,
   loading: false,
   error: null,
@@ -14,18 +16,31 @@ export const fetchContestantsByTournamentId = createAsyncThunk(
   "contestants/fetchByTournamentId",
   async (tournamentId) => {
     const contestants = await contestantsAPI.getContestantsByTournamentId(
-      tournamentId.id
+      tournamentId
     );
     return contestants;
   }
 );
 
-// Async thunk to fetch a contestant by ID
-export const fetchContestantById = createAsyncThunk(
-  "contestants/fetchById",
-  async (id) => {
-    const contestant = await contestantsAPI.getContestantById(id);
-    return contestant;
+// Async thunk to fetch contestants for matches
+export const fetchContestantsForMatches = createAsyncThunk(
+  "contestants/fetchForMatches",
+  async (participantIds, { rejectWithValue }) => {
+    try {
+      const uniqueIds = [...new Set(participantIds)];
+      const contestants = await Promise.all(
+        uniqueIds.map((id) => contestantsAPI.getContestantById(id))
+      );
+
+      const contestantsMap = contestants.reduce((acc, contestant) => {
+        acc[contestant.id] = contestant.Name;
+        return acc;
+      }, {});
+
+      return contestantsMap;
+    } catch (error) {
+      return rejectWithValue("Failed to fetch contestants.");
+    }
   }
 );
 
@@ -37,7 +52,7 @@ export const deleteContestantFromTournament = createAsyncThunk(
       tournamentId,
       contestantId
     );
-    return contestantId; // Return the contestantId to handle the state update
+    return contestantId;
   }
 );
 
@@ -49,12 +64,11 @@ export const addContestantToTournament = createAsyncThunk(
       tournamentId,
       contestantData
     );
-    console.log("Contestant returned: ", newContestant.data);
-    return newContestant.data; // Return the newly added contestant
+    return newContestant;
   }
 );
 
-// Create the slice
+// Contestant Slice
 const contestantSlice = createSlice({
   name: "contestants",
   initialState,
@@ -62,45 +76,46 @@ const contestantSlice = createSlice({
     resetContestants: (state) => {
       state.contestants = [];
       state.selectedContestant = null;
-      state.loading = false;
-      state.error = null;
     },
   },
   extraReducers: (builder) => {
     builder
+      .addCase(fetchContestantsByTournamentId.pending, (state) => {
+        state.loading = true;
+      })
       .addCase(fetchContestantsByTournamentId.fulfilled, (state, action) => {
         state.loading = false;
         state.contestants = action.payload;
       })
-      .addCase(fetchContestantById.fulfilled, (state, action) => {
-        state.selectedContestant = action.payload;
+      .addCase(fetchContestantsByTournamentId.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message;
+      })
+      .addCase(fetchContestantsForMatches.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchContestantsForMatches.fulfilled, (state, action) => {
+        state.loading = false;
+        state.contestantsMap = action.payload;
+      })
+      .addCase(fetchContestantsForMatches.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(addContestantToTournament.fulfilled, (state, action) => {
+        state.contestants.push(action.payload);
       })
       .addCase(deleteContestantFromTournament.fulfilled, (state, action) => {
         state.contestants = state.contestants.filter(
           (contestant) => contestant.id !== action.payload
         );
-      })
-      .addCase(addContestantToTournament.fulfilled, (state, action) => {
-        // Add the new contestant to the contestants array
-        state.contestants.push(action.payload);
-        console.log(
-          "Updated contestants in slice: ",
-          JSON.stringify(state.contestants)
-        ); // Log updated state
-      })
-      .addCase(addContestantToTournament.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message; // Handle error if needed
       });
   },
 });
 
-// Export actions and reducer
+// Export actions, selectors, and reducer
 export const { resetContestants } = contestantSlice.actions;
 export const selectContestants = (state) => state.contestants.contestants;
-export const selectSelectedContestant = (state) =>
-  state.contestants.selectedContestant;
 export const selectLoading = (state) => state.contestants.loading;
 export const selectError = (state) => state.contestants.error;
-
 export default contestantSlice.reducer;

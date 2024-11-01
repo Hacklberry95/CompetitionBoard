@@ -1,18 +1,18 @@
 // src/tabs/ViewBracketTab.js
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import BracketVisualizer from "../tabComponents/BracketVisualizer";
-import matchAPI from "../../api/matchAPI"; // This might be refactored if needed
-import tournamentAPI from "../../api/tournamentAPI"; // Keep for generating brackets
 import "../../styles/ViewBracketTab.css";
 import { useAlert } from "../../context/AlertContext";
 import ConfirmationDialog from "../helpers/ConfirmationDialog";
 import { useDispatch, useSelector } from "react-redux";
 import {
-  fetchBracketsByTournamentId,
   deleteAllBrackets,
   clearBrackets,
+  generateBracketsForTournament,
+  fetchBracketsByTournamentId,
 } from "../../redux/slices/bracketSlice";
-import { fetchMatchesByBracketId } from "../../redux/slices/matchSlice"; // Assuming this exists
+import { fetchMatchesByBracketId } from "../../redux/slices/matchSlice";
+import { fetchContestantsForMatches } from "../../redux/slices/contestantSlice";
 
 const ViewBracketTab = ({ selectedTournament }) => {
   const dispatch = useDispatch();
@@ -20,89 +20,53 @@ const ViewBracketTab = ({ selectedTournament }) => {
 
   const brackets = useSelector((state) => state.brackets.brackets);
   const loadingBrackets = useSelector((state) => state.brackets.loading);
-  const matches = useSelector((state) => state.matches.matches); // Assuming this is already set up
-  const [selectedBracket, setSelectedBracket] = React.useState(null);
-  const [generating, setGenerating] = React.useState(false);
-  const [isDialogOpen, setIsDialogOpen] = React.useState(false);
+  const matches = useSelector((state) => state.matches.matches);
+  const contestantsMap = useSelector(
+    (state) => state.contestants.contestantsMap
+  );
+  const error = useSelector(
+    (state) =>
+      state.brackets.error || state.matches.error || state.contestants.error
+  );
 
-  // Fetch brackets when selectedTournament changes
+  const [selectedBracket, setSelectedBracket] = useState(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
   useEffect(() => {
     if (selectedTournament) {
-      dispatch(fetchBracketsByTournamentId(selectedTournament));
+      dispatch(fetchBracketsByTournamentId(selectedTournament)).then(
+        (result) => {
+          if (result.payload?.length) setSelectedBracket(result.payload[0].id);
+        }
+      );
     } else {
       dispatch(clearBrackets());
+      setSelectedBracket(null);
     }
   }, [selectedTournament, dispatch]);
 
-  // Fetch matches when selectedBracket changes
   useEffect(() => {
     if (selectedBracket) {
-      dispatch(fetchMatchesByBracketId(selectedBracket)); // Assuming you have this function
+      dispatch(fetchMatchesByBracketId(selectedBracket)).then((result) => {
+        const participantIds = result.payload?.flatMap((match) => [
+          match.Participant1Id,
+          match.Participant2Id,
+        ]);
+        dispatch(fetchContestantsForMatches(participantIds));
+      });
     }
   }, [selectedBracket, dispatch]);
 
   const handleGenerateBrackets = async () => {
-    if (!selectedTournament) return;
-
-    setGenerating(true);
-    try {
-      const response = await tournamentAPI.getGeneratedBrackets(
-        selectedTournament
-      );
-
-      if (response.status === 200) {
-        showSnackbar(
-          response.data.message || "Brackets generated successfully.",
-          "success"
-        );
-        dispatch(fetchBracketsByTournamentId(selectedTournament)); // Re-fetch brackets
-      } else {
-        showSnackbar(response.data.error || "An error occurred.", "error");
-      }
-    } catch (error) {
-      const errorMessage =
-        error?.data?.error || "Failed to generate the matches!";
-      console.error("Error response:", error);
-      showSnackbar(errorMessage, "error");
-    } finally {
-      setGenerating(false);
-    }
-  };
-
-  const deleteBrackets = () => {
-    setIsDialogOpen(true);
-  };
-
-  const closeDialog = () => {
-    setIsDialogOpen(false);
+    await dispatch(generateBracketsForTournament(selectedTournament));
+    dispatch(fetchBracketsByTournamentId(selectedTournament));
   };
 
   const handleDeleteBrackets = async () => {
-    if (!selectedTournament) return;
-
-    try {
-      const response = await dispatch(deleteAllBrackets(selectedTournament));
-
-      if (response.payload.status === 200) {
-        showSnackbar(
-          response.payload.message || "Brackets deleted successfully.",
-          "success"
-        );
-        dispatch(fetchBracketsByTournamentId(selectedTournament)); // Re-fetch brackets
-      } else if (response.payload.status === 404) {
-        showSnackbar(
-          response.payload.message || "No BracketEntries found to delete.",
-          "error"
-        );
-      } else {
-        showSnackbar(response.payload.error || "An error occurred.", "error");
-      }
-    } catch (error) {
-      const errorMessage =
-        error.response?.data?.message || "Failed to delete the brackets!";
-      console.error("Error response:", error);
-      showSnackbar(errorMessage, "error");
-    }
+    await dispatch(deleteAllBrackets(selectedTournament));
+    dispatch(fetchBracketsByTournamentId(selectedTournament));
+    setSelectedBracket(null);
+    setIsDialogOpen(false);
   };
 
   return (
@@ -111,9 +75,7 @@ const ViewBracketTab = ({ selectedTournament }) => {
         <h2>Bracket View</h2>
         {brackets.length > 0 && (
           <div className="dropdown-container">
-            <label htmlFor="bracket-select">Select Bracket:</label>
             <select
-              id="bracket-select"
               value={selectedBracket || ""}
               onChange={(e) => setSelectedBracket(e.target.value)}
             >
@@ -128,29 +90,20 @@ const ViewBracketTab = ({ selectedTournament }) => {
       </div>
 
       <div className="actions">
-        <button
-          className="button"
-          onClick={handleGenerateBrackets}
-          disabled={generating}
-        >
-          {generating ? "Generating Brackets..." : "Generate Brackets"}
-        </button>
-        <button className="button" onClick={deleteBrackets}>
+        <button onClick={handleGenerateBrackets}>Generate Brackets</button>
+        <button onClick={() => setIsDialogOpen(true)}>
           Delete All Brackets
         </button>
       </div>
 
-      {loadingBrackets && <p>Loading matches...</p>}
-      {!loadingBrackets && matches.length === 0 && (
-        <p>No matches available for this tournament.</p>
-      )}
+      {loadingBrackets && <p>Loading brackets...</p>}
+      {error && <p>{error}</p>}
+      <BracketVisualizer matches={matches} contestantsMap={contestantsMap} />
 
-      <BracketVisualizer matches={matches} />
       <ConfirmationDialog
         open={isDialogOpen}
-        onClose={closeDialog}
+        onClose={() => setIsDialogOpen(false)}
         onConfirm={handleDeleteBrackets}
-        message={`Are you sure you want to delete ALL of the brackets?`}
       />
     </div>
   );

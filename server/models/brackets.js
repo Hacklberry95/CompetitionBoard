@@ -58,16 +58,32 @@ class Brackets {
     callback
   ) {
     const query = `
-      INSERT INTO Brackets (TournamentID, Division, Gender, Arm, WeightClass)
+      INSERT INTO Brackets (TournamentId, Division, Gender, Arm, WeightClass)
       VALUES (?, ?, ?, ?, ?);
     `;
-    db.run(
-      query,
-      [tournamentId, division, gender, arm, weightClass],
-      function (err) {
-        callback(err, this.lastID); // Return the last inserted ID
-      }
-    );
+
+    return new Promise((resolve, reject) => {
+      db.run(
+        query,
+        [tournamentId, division, gender, arm, weightClass],
+        function (err) {
+          if (err) {
+            console.error("Error creating bracket:", err.message);
+            if (callback) callback(err);
+            return reject(err);
+          }
+
+          const lastId = this.lastID;
+          console.log("Created bracket with ID:", lastId);
+
+          if (callback) {
+            callback(null, lastId);
+          } else {
+            resolve(lastId);
+          }
+        }
+      );
+    });
   }
 
   static findAll(db, callback) {
@@ -114,7 +130,24 @@ class Brackets {
 
   static deleteAll(db, callback) {
     const query = `DELETE FROM Brackets;`;
-    db.run(query, callback);
+
+    return new Promise((resolve, reject) => {
+      db.run(query, function (err) {
+        if (err) {
+          console.error("Error deleting all brackets:", err.message);
+          if (callback) callback(err);
+          return reject(err);
+        }
+
+        console.log("All brackets deleted successfully.");
+
+        if (callback) {
+          callback(null); // Invoke the callback with no error if provided
+        } else {
+          resolve(); // Resolve the promise if no callback is provided
+        }
+      });
+    });
   }
 }
 

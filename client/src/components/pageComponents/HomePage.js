@@ -20,6 +20,7 @@ const Homepage = () => {
   const [activeTab, setActiveTab] = React.useState("viewTournaments");
 
   const tournaments = useSelector((state) => state.tournaments.tournaments);
+  console.log("Homepage tournaments: ", tournaments);
   const selectedTournament = useSelector(
     (state) => state.tournaments.selectedTournament
   );

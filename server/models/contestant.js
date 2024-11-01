@@ -90,9 +90,26 @@ class Contestant {
     });
   }
 
-  static findByTournamentId(db, tournamentId, callback) {
-    const query = `SELECT * FROM Contestants WHERE TournamentId = ?;`;
-    db.all(query, [tournamentId], callback);
+  static findByTournamentId(db, tournamentId) {
+    const query = `SELECT * FROM Contestants WHERE TournamentId = ?`;
+    console.log(`Querying contestants for TournamentId: ${tournamentId}`);
+
+    return new Promise((resolve, reject) => {
+      db.all(query, [tournamentId], (err, rows) => {
+        if (err) {
+          console.error(
+            "Error finding contestants by tournament ID:",
+            err.message
+          );
+          reject(err);
+        } else {
+          console.log(
+            `Found ${rows.length} contestants for tournament ${tournamentId}`
+          );
+          resolve(rows);
+        }
+      });
+    });
   }
 }
 

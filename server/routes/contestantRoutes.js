@@ -2,10 +2,7 @@
 const express = require("express");
 const router = express.Router();
 const Contestant = require("../models/contestant");
-const path = require("path");
-
-const dbPath = path.join(__dirname, "../../db/tournament.db");
-const db = new (require("sqlite3").verbose().Database)(dbPath);
+const db = require("../db");
 
 // Get all contestants for a specific tournament
 router.get("/contestants/tournament/:tournamentId", (req, res) => {
@@ -17,6 +14,10 @@ router.get("/contestants/tournament/:tournamentId", (req, res) => {
       return res
         .status(500)
         .json({ message: "Error fetching contestants", error: err });
+    }
+    if (contestants.length === 0) {
+      console.log(`No contestants found for tournament ID ${tournamentId}`);
+      return res.status(404).json({ message: "No contestants found" });
     }
     return res.json(contestants);
   });

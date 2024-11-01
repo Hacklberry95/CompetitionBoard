@@ -7,6 +7,7 @@ const contestantsAPI = {
   getContestantsByTournamentId: async (tournamentId) => {
     try {
       const response = await axios.get(`${API_URL}/tournament/${tournamentId}`);
+      console.log("CONTESTANTS FROM API: ", response.data);
       return response.data;
     } catch (error) {
       throw error.response.data;

@@ -14,6 +14,7 @@ const tournamentAPI = {
   getAllTournaments: async () => {
     try {
       const response = await axios.get(API_URL);
+      console.log("API response for tournaments: ", response.data);
       return response.data;
     } catch (error) {
       throw error.response.data;
@@ -41,37 +42,6 @@ const tournamentAPI = {
       return response.data;
     } catch (error) {
       throw error.response.data;
-    }
-  },
-
-  getGeneratedBrackets: async (tournamentId) => {
-    try {
-      const response = await axios.post(
-        `${API_URL}/${tournamentId}/generateBrackets`
-      );
-      return response;
-    } catch (error) {
-      return (
-        error.response || {
-          status: 500,
-          data: { error: "Error generating brackets." },
-        }
-      );
-    }
-  },
-  deleteGenerateBrackets: async (tournamentId) => {
-    try {
-      const response = await axios.delete(
-        `${API_URL}/${tournamentId}/deleteAll`
-      );
-      return response;
-    } catch (error) {
-      return (
-        error.response || {
-          status: 500,
-          data: { error: "Error deleting brackets." },
-        }
-      );
     }
   },
 };

@@ -149,19 +149,22 @@ class Matches {
     db.all(query, [bracketId], callback);
   }
 
-  static findByParticipantId(db, participantId, callback) {
-    const query = `
-      SELECT * FROM Matches
-      WHERE Participant1Id = ? OR Participant2Id = ?;
-    `;
-    db.all(query, [participantId, participantId], callback);
-  }
-  static findByContestantId(db, contestantId, callback) {
-    const query = `
-      SELECT * FROM Matches
-      WHERE Participant1Id = ? OR Participant2Id = ?;
-    `;
-    db.all(query, [contestantId, contestantId], callback);
+  static findByParticipantId(db, participantId) {
+    const query = `SELECT * FROM Matches WHERE Participant1Id = ? OR Participant2Id = ?`;
+
+    return new Promise((resolve, reject) => {
+      db.all(query, [participantId, participantId], (err, rows) => {
+        if (err) {
+          console.error(
+            "Error finding matches by participant ID:",
+            err.message
+          );
+          reject(err);
+        } else {
+          resolve(rows || []); // Ensure it returns an empty array if no rows are found
+        }
+      });
+    });
   }
 }
 
