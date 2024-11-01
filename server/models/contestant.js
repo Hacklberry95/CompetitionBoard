@@ -48,7 +48,7 @@ class Contestant {
         this.division,
       ],
       function (err) {
-        callback(err, this.lastId);
+        callback(err, this.lastID);
       }
     );
   }

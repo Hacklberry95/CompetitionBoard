@@ -1,66 +1,60 @@
 // src/pages/Homepage.js
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import ViewBracketTab from "../tabs/ViewBracketTab";
 import ViewTournamentsTab from "../tabs/ViewTournamentsTab";
-import tournamentAPI from "../../api/tournamentAPI";
-import contestantAPI from "../../api/contestantsAPI";
+import {
+  fetchAllTournaments,
+  setSelectedTournament,
+} from "../../redux/slices/tournamentSlice";
+import {
+  fetchContestantsByTournamentId,
+  resetContestants,
+} from "../../redux/slices/contestantSlice";
+import { fetchBracketsByTournamentId } from "../../redux/slices/bracketSlice";
+import { fetchMatchesByTournamentId } from "../../redux/slices/matchSlice";
 import "../../styles/HomePage.css";
 
 const Homepage = () => {
-  const [activeTab, setActiveTab] = useState("viewTournaments");
-  const [tournaments, setTournaments] = useState([]);
-  const [selectedTournament, setSelectedTournament] = useState(null);
-  const [contestants, setContestants] = useState([]);
-  const [matches, setMatches] = useState([]); // New state for matches
+  const dispatch = useDispatch();
+  const [activeTab, setActiveTab] = React.useState("viewTournaments");
 
-  // Fetch tournaments
+  const tournaments = useSelector((state) => state.tournaments.tournaments);
+  const selectedTournament = useSelector(
+    (state) => state.tournaments.selectedTournament
+  );
+  const contestants = useSelector((state) => state.tournaments.contestants);
+  const matches = useSelector((state) => state.matches.matches);
+  const loading = useSelector((state) => state.tournaments.loading);
+
+  // Fetch tournaments on component mount
   useEffect(() => {
-    const fetchTournaments = async () => {
-      try {
-        const tournamentData = await tournamentAPI.getAllTournaments();
-        setTournaments(tournamentData);
-        if (tournamentData.length > 0) {
-          setSelectedTournament(tournamentData[0].id);
-          const contestantData =
-            await contestantAPI.getContestantsByTournamentId(
-              tournamentData[0].id
-            );
-          setContestants(contestantData);
-        }
-      } catch (error) {
-        console.error("Error fetching tournaments:", error);
-      }
-    };
+    dispatch(fetchAllTournaments());
+  }, [dispatch]);
 
-    fetchTournaments();
-  }, []);
-
-  // Fetch contestants when a tournament is selected
-  const handleTournamentChange = async (event) => {
-    const tournamentId = event.target.value;
-    setSelectedTournament(tournamentId);
-
-    if (tournamentId) {
-      try {
-        const contestantData = await contestantAPI.getContestantsByTournamentId(
-          tournamentId
-        );
-        setContestants(contestantData);
-
-        // Fetch matches after changing the tournament
-        const matchesData = await tournamentAPI.getMatchesByTournamentId(
-          tournamentId
-        ); // New API call to fetch matches
-        setMatches(matchesData); // Update state with fetched matches
-      } catch (error) {
-        console.error("Error fetching contestants or matches:", error);
-      }
+  // Fetch contestants and matches when a tournament is selected
+  useEffect(() => {
+    if (selectedTournament) {
+      dispatch(fetchContestantsByTournamentId(selectedTournament));
+      dispatch(fetchMatchesByTournamentId(selectedTournament));
+      dispatch(fetchBracketsByTournamentId(selectedTournament));
     } else {
-      setContestants([]);
-      setMatches([]); // Reset matches when no tournament is selected
+      dispatch(resetContestants());
+    }
+  }, [dispatch, selectedTournament]);
+
+  // Handle tournament change from dropdown
+  const handleTournamentChange = (event) => {
+    const tournamentId = event.target.value;
+    dispatch(setSelectedTournament(tournamentId)); // Update the selected tournament in the store
+    if (tournamentId) {
+      dispatch(fetchContestantsByTournamentId(tournamentId));
+    } else {
+      dispatch(resetContestants());
     }
   };
 
+  // Render the appropriate tab content
   const renderTabContent = () => {
     switch (activeTab) {
       case "bracketViewer":
@@ -68,7 +62,7 @@ const Homepage = () => {
           <ViewBracketTab
             selectedTournament={selectedTournament}
             contestants={contestants}
-            matches={matches} // Pass matches to the ViewBracketTab
+            matches={matches}
           />
         );
       case "viewTournaments":
@@ -101,7 +95,9 @@ const Homepage = () => {
           </select>
         </div>
       </nav>
-      <div className="tab-content">{renderTabContent()}</div>
+      <div className="tab-content">
+        {loading ? <p>Loading...</p> : renderTabContent()}
+      </div>
     </div>
   );
 };

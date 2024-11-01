@@ -33,6 +33,7 @@ const matchAPI = {
   updateMatch: async (id, matchData) => {
     try {
       const response = await axios.put(`${API_URL}/${id}`, matchData);
+      console.log(response.data);
       return response.data;
     } catch (error) {
       throw error.response.data;

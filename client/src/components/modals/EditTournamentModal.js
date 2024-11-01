@@ -1,38 +1,61 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchTournamentById } from "../../redux/slices/tournamentSlice";
+import {
+  fetchContestantsByTournamentId,
+  selectContestants,
+  addContestantToTournament,
+  deleteContestantFromTournament,
+  selectLoading,
+  selectError,
+} from "../../redux/slices/contestantSlice";
 import "../../styles/EditTournamentModal.css";
 import { Stack, IconButton } from "@mui/material";
 import { DeleteForever, EditNote } from "@mui/icons-material";
 import { useAlert } from "../../context/AlertContext";
 import { armAndWeightCategories } from "../constants/WeightCategories";
 
-const EditTournamentModal = ({
-  tournament,
-  isOpen,
-  onClose,
-  onAddContestant,
-  onRemoveContestant,
-  refreshTournament,
-}) => {
-  const [contestantName, setContestantName] = useState("");
-  const { showSnackbar } = useAlert();
-  const [weightKg, setWeightKg] = useState("");
-  const [division, setDivision] = useState("");
-  const [gender, setGender] = useState("");
-  const [armPreference, setArmPreference] = useState("");
-  const [availableWeightCategories, setAvailableWeightCategories] = useState(
-    []
+const EditTournamentModal = ({ tournamentId, isOpen, onClose }) => {
+  const dispatch = useDispatch();
+  const tournament = useSelector(
+    (state) => state.tournaments.selectedTournament
   );
+  const contestants = useSelector(selectContestants);
+  console.log("Contestants in the Modal: ", contestants);
+  const { showSnackbar } = useAlert();
+  const loading = useSelector(selectLoading);
+  const error = useSelector(selectError);
+
+  // Local state for new contestant
+  const [contestantName, setContestantName] = React.useState("");
+  const [weightKg, setWeightKg] = React.useState("");
+  const [division, setDivision] = React.useState("");
+  const [gender, setGender] = React.useState("");
+  const [armPreference, setArmPreference] = React.useState("");
+  const [availableWeightCategories, setAvailableWeightCategories] =
+    React.useState([]);
+
+  useEffect(() => {
+    if (isOpen && tournamentId) {
+      // dispatch(fetchTournamentById(tournamentId));
+      dispatch(fetchContestantsByTournamentId(tournamentId));
+    }
+  }, [dispatch, tournamentId, isOpen]);
 
   useEffect(() => {
     if (!isOpen) {
-      setContestantName("");
-      setWeightKg("");
-      setDivision("");
-      setGender("");
-      setArmPreference("");
-      setAvailableWeightCategories([]);
+      resetForm();
     }
   }, [isOpen]);
+
+  const resetForm = () => {
+    setContestantName("");
+    setWeightKg("");
+    setDivision("");
+    setGender("");
+    setArmPreference("");
+    setAvailableWeightCategories([]);
+  };
 
   // Update weight categories when gender or division changes
   useEffect(() => {
@@ -52,38 +75,36 @@ const EditTournamentModal = ({
   const handleAddContestant = async (e) => {
     e.preventDefault();
 
-    // Check if contestant name is provided
     if (!contestantName.trim()) {
       showSnackbar("Contestant name cannot be empty.", "warning");
       return;
     }
 
+    const contestantData = {
+      tournamentId: tournament.id,
+      Name: contestantName.trim(),
+      Gender: gender === "Male" ? "M" : "F",
+      ArmPreference:
+        armPreference === "Right"
+          ? "R"
+          : armPreference === "Left"
+          ? "L"
+          : armPreference === "Both"
+          ? "B"
+          : "NULL",
+      WeightKg: parseFloat(weightKg),
+      Division: division,
+    };
+    console.log("Contestant Data in EditTournament: ", contestantData);
     try {
-      await onAddContestant(tournament.id, {
-        TournamentId: tournament.id,
-        Name: contestantName.trim(),
-        Gender: gender === "Male" ? "M" : "F",
-        ArmPreference:
-          armPreference === "Right"
-            ? "R"
-            : armPreference === "Left"
-            ? "L"
-            : armPreference === "Both"
-            ? "B"
-            : "NULL",
-        WeightKg: parseFloat(weightKg),
-        Division: division,
-      });
-
-      // Clear form fields after submission
-      setContestantName("");
-      setWeightKg("");
-      setDivision("");
-      setGender("");
-      setArmPreference(""); // Resetting this to empty, adjust if needed
-
-      // Refresh tournament data and show success snackbar
-      refreshTournament();
+      await dispatch(
+        addContestantToTournament({
+          tournamentId: tournament.id,
+          contestantData,
+        })
+      ).unwrap();
+      //dispatch(fetchContestantsByTournamentId(tournament.id));
+      resetForm();
       showSnackbar("Contestant added successfully!", "success");
     } catch (error) {
       console.error("Error adding contestant:", error);
@@ -93,7 +114,12 @@ const EditTournamentModal = ({
 
   const handleRemoveContestant = async (contestantId) => {
     try {
-      await onRemoveContestant(tournament.id, contestantId);
+      await dispatch(
+        deleteContestantFromTournament({
+          tournamentId: tournament.id,
+          contestantId,
+        })
+      ).unwrap();
       showSnackbar("Contestant removed successfully!", "success");
     } catch (error) {
       console.error("Error removing contestant:", error);
@@ -169,65 +195,70 @@ const EditTournamentModal = ({
         </form>
 
         <h4 className="contestant-list-header">Contestants</h4>
-        <ul className="contestants-edit-list">
-          <li className="contestants-header">
-            <span>Name</span>
-            <span>Weight</span>
-            <span>Arm</span>
-            <span>Category</span>
-            <span>Actions</span>
-          </li>
-          <div className="contestants-list">
-            {tournament.contestants?.length > 0 ? (
-              tournament.contestants.map((contestant) => (
-                <li key={contestant.id} className="contestant-row">
-                  <span>{contestant.Name}</span>
-                  <span>
-                    {contestant.WeightKg >= 0
-                      ? `+${contestant.WeightKg}`
-                      : contestant.WeightKg}{" "}
-                    kg
-                  </span>
+        {loading ? (
+          <p>Loading contestants...</p>
+        ) : error ? (
+          <p>Error loading contestants: {error}</p>
+        ) : (
+          <ul className="contestants-edit-list">
+            <li className="contestants-header">
+              <span>Name</span>
+              <span>Weight</span>
+              <span>Arm</span>
+              <span>Category</span>
+              <span>Actions</span>
+            </li>
+            <div className="contestants-list">
+              {contestants.length > 0 ? (
+                contestants.map((contestant) => (
+                  <li key={contestant.id} className="contestant-row">
+                    <span>{contestant.Name}</span>
+                    <span>
+                      {contestant.WeightKg >= 0
+                        ? `+${contestant.WeightKg}`
+                        : contestant.WeightKg}{" "}
+                      kg
+                    </span>
+                    <span>
+                      {contestant.ArmPreference === "R"
+                        ? "Right"
+                        : contestant.ArmPreference === "L"
+                        ? "Left"
+                        : contestant.ArmPreference === "B"
+                        ? "Both"
+                        : "N/A"}
+                    </span>
+                    <span>
+                      {contestant.Gender === "M" ? "Male" : "Female"} -{" "}
+                      {contestant.Division || "N/A"}{" "}
+                    </span>
 
-                  <span>
-                    {contestant.ArmPreference === "R"
-                      ? "Right"
-                      : contestant.ArmPreference === "L"
-                      ? "Left"
-                      : contestant.ArmPreference === "B"
-                      ? "Both"
-                      : "N/A"}
-                  </span>
-                  <span>
-                    {contestant.Gender === "M" ? "Male" : "Female"} -{" "}
-                    {contestant.Division || "N/A"}{" "}
-                  </span>
-
-                  <Stack
-                    spacing={2}
-                    direction="row"
-                    sx={{
-                      justifyContent: "center",
-                      alignItems: "center",
-                      display: "flex",
-                    }}
-                  >
-                    <IconButton
-                      onClick={() => handleRemoveContestant(contestant.id)}
+                    <Stack
+                      spacing={2}
+                      direction="row"
+                      sx={{
+                        justifyContent: "center",
+                        alignItems: "center",
+                        display: "flex",
+                      }}
                     >
-                      <DeleteForever />
-                    </IconButton>
-                    <IconButton>
-                      <EditNote />
-                    </IconButton>
-                  </Stack>
-                </li>
-              ))
-            ) : (
-              <p>No contestants available.</p>
-            )}
-          </div>
-        </ul>
+                      <IconButton
+                        onClick={() => handleRemoveContestant(contestant.id)}
+                      >
+                        <DeleteForever />
+                      </IconButton>
+                      <IconButton>
+                        <EditNote />
+                      </IconButton>
+                    </Stack>
+                  </li>
+                ))
+              ) : (
+                <p>No contestants available.</p>
+              )}
+            </div>
+          </ul>
+        )}
       </div>
     </div>
   );

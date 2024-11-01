@@ -96,8 +96,8 @@ const ViewBracketTab = ({ selectedTournament }) => {
           response.data.message || "Brackets deleted successfully.",
           "success"
         );
-            fetchBrackets();
-            fetchMatches();
+        fetchBrackets();
+        fetchMatches();
       } else if (response.status === 404) {
         showSnackbar(
           response.data.message || "No BracketEntries found to delete.",

@@ -23,7 +23,21 @@ const contestantsAPI = {
     }
   },
 
-  deleteContestant: async (tournamentId, contestantId) => {
+  addContestantToTournament: async (tournamentId, contestantData) => {
+    console.log("Contestant Data being sent:", contestantData);
+    try {
+      const response = await axios.post(
+        `${API_URL}/${tournamentId}/contestants`,
+        contestantData
+      );
+      console.log("API Call response for adding contestant", response);
+      return response;
+    } catch (error) {
+      throw error.response;
+    }
+  },
+  deleteContestantFromTournament: async (tournamentId, contestantId) => {
+    console.log("DELETE CONTESTANT: ", tournamentId, " ", contestantId);
     try {
       const response = await axios.delete(
         `${API_URL}/${tournamentId}/${contestantId}`

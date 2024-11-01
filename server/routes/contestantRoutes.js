@@ -81,6 +81,42 @@ router.delete("/contestants/:id", (req, res) => {
   });
 });
 
+// Add a contestant to a tournament
+router.post("/contestants/:tournamentId/contestants", (req, res) => {
+  const { tournamentId } = req.params;
+  const { Name, Gender, WeightKg, ArmPreference, Division } = req.body;
+
+  const newContestant = new Contestant(
+    tournamentId,
+    Name,
+    Gender,
+    WeightKg,
+    ArmPreference,
+    Division
+  );
+
+  // Save the contestant to the database
+  newContestant.save(db, (err, lastId) => {
+    if (err) {
+      return res
+        .status(500)
+        .json({ message: "Error adding contestant", error: err });
+    }
+    console.log("Last ID from save method:", lastId); // Log the last ID
+    const responseContestant = {
+      id: lastId,
+      TournamentId: tournamentId,
+      Name,
+      Gender,
+      WeightKg,
+      ArmPreference,
+      Division,
+    };
+    console.log(responseContestant);
+    return res.status(201).json(responseContestant);
+  });
+});
+
 // Delete a contestant by tournamentId and contestantId
 router.delete("/contestants/:tournamentId/:contestantId", (req, res) => {
   const { tournamentId, contestantId } = req.params;

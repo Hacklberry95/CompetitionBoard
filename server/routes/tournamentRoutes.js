@@ -135,30 +135,6 @@ router.delete("/tournaments/:tournamentId/deleteAll", async (req, res) => {
 router.post("/tournaments/:tournamentId/contestants", (req, res) => {
   const { tournamentId } = req.params;
   const { Name, Gender, WeightKg, ArmPreference, Division } = req.body;
-  
-  const newContestant = new Contestant(
-    tournamentId,
-    Name,
-    Gender,
-    WeightKg,
-    ArmPreference,
-    Division
-  );
-
-  newContestant.save(db, (err) => {
-    if (err) {
-      return res
-        .status(500)
-        .json({ message: "Error adding contestant", error: err });
-    }
-    return res.status(201).json({ message: "Contestant added successfully!" });
-  });
-});
-
-// Add a contestant to a tournament
-router.post("/tournaments/:tournamentId/contestants", (req, res) => {
-  const { tournamentId } = req.params;
-  const { Name, Gender, WeightKg, ArmPreference, Division } = req.body;
 
   const newContestant = new Contestant(
     tournamentId,
