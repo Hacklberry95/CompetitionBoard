@@ -1,3 +1,4 @@
+// src/tabs/ViewTournamentsTab.js
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -17,13 +18,12 @@ import ConfirmationDialog from "../helpers/ConfirmationDialog";
 const ViewTournamentsTab = () => {
   const dispatch = useDispatch();
   const tournaments = useSelector((state) => state.tournaments.tournaments);
-  const selectedTournament = useSelector(
-    (state) => state.tournaments.selectedTournament
-  );
   const loading = useSelector((state) => state.tournaments.loading);
   const { showSnackbar } = useAlert();
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedTournamentId, setSelectedTournamentId] = useState(null);
   const [selectedTournamentForDeletion, setSelectedTournamentForDeletion] =
     useState(null);
   const [formData, setFormData] = useState({
@@ -32,11 +32,13 @@ const ViewTournamentsTab = () => {
     Location: "",
   });
 
+  // Fetch tournaments on component mount
   useEffect(() => {
     dispatch(fetchAllTournaments());
   }, [dispatch]);
 
   const openModal = async (tournament) => {
+    setSelectedTournamentId(tournament.id);
     await dispatch(fetchTournamentById(tournament.id));
     setIsModalOpen(true);
   };
@@ -59,9 +61,8 @@ const ViewTournamentsTab = () => {
       await dispatch(createTournament(formData)).unwrap();
       showSnackbar("Tournament created successfully!", "success");
       setFormData({ Name: "", Date: "", Location: "" });
-      dispatch(fetchAllTournaments());
+      dispatch(fetchAllTournaments()); // Refresh tournament list
     } catch (error) {
-      console.error("Error creating tournament:", error);
       showSnackbar("Failed to create tournament.", "error");
     }
   };
@@ -72,15 +73,12 @@ const ViewTournamentsTab = () => {
   };
 
   const handleConfirmDelete = async () => {
-    if (!selectedTournamentForDeletion) return;
-
     try {
       await dispatch(
         deleteTournament(selectedTournamentForDeletion.id)
       ).unwrap();
       showSnackbar("Tournament deleted successfully!", "success");
     } catch (error) {
-      console.error("Error while deleting tournament:", error);
       showSnackbar("Error while deleting tournament!", "error");
     } finally {
       setIsDialogOpen(false);
@@ -97,7 +95,6 @@ const ViewTournamentsTab = () => {
         <h3>Create a New Tournament</h3>
         <input
           type="text"
-          name="name"
           placeholder="Tournament Name"
           value={formData.Name}
           onChange={(e) => setFormData({ ...formData, Name: e.target.value })}
@@ -105,7 +102,6 @@ const ViewTournamentsTab = () => {
         />
         <input
           type="date"
-          name="date"
           placeholder="Tournament Date"
           value={formData.Date}
           onChange={(e) => setFormData({ ...formData, Date: e.target.value })}
@@ -113,7 +109,6 @@ const ViewTournamentsTab = () => {
         />
         <input
           type="text"
-          name="location"
           placeholder="Location"
           value={formData.Location}
           onChange={(e) =>
@@ -138,7 +133,7 @@ const ViewTournamentsTab = () => {
             </tr>
           </thead>
           <tbody>
-            {tournaments.map((tournament) => (
+            {(tournaments || []).map((tournament) => (
               <tr key={tournament.id}>
                 <td>{tournament.Name}</td>
                 <td>{new Date(tournament.Date).toLocaleDateString()}</td>
@@ -162,9 +157,9 @@ const ViewTournamentsTab = () => {
       )}
 
       <EditTournamentModal
-        tournamentId={selectedTournament}
         isOpen={isModalOpen}
         onClose={closeModal}
+        tournamentId={selectedTournamentId}
       />
       <ConfirmationDialog
         open={isDialogOpen}

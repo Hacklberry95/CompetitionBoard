@@ -1,6 +1,10 @@
-import React, { useEffect } from "react";
+// src/components/modals/EditTournamentModal.js
+import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchTournamentById } from "../../redux/slices/tournamentSlice";
+import {
+  fetchTournamentById,
+  selectSelectedTournament,
+} from "../../redux/slices/tournamentSlice";
 import {
   fetchContestantsByTournamentId,
   selectContestants,
@@ -17,35 +21,32 @@ import { armAndWeightCategories } from "../constants/WeightCategories";
 
 const EditTournamentModal = ({ tournamentId, isOpen, onClose }) => {
   const dispatch = useDispatch();
-  const tournament = useSelector(
-    (state) => state.tournaments.selectedTournament
-  );
+  const tournament = useSelector(selectSelectedTournament);
   const contestants = useSelector(selectContestants);
-  console.log("Contestants in the Modal: ", contestants);
-  const { showSnackbar } = useAlert();
   const loading = useSelector(selectLoading);
   const error = useSelector(selectError);
+  const { showSnackbar } = useAlert();
 
   // Local state for new contestant
-  const [contestantName, setContestantName] = React.useState("");
-  const [weightKg, setWeightKg] = React.useState("");
-  const [division, setDivision] = React.useState("");
-  const [gender, setGender] = React.useState("");
-  const [armPreference, setArmPreference] = React.useState("");
-  const [availableWeightCategories, setAvailableWeightCategories] =
-    React.useState([]);
+  const [contestantName, setContestantName] = useState("");
+  const [weightKg, setWeightKg] = useState("");
+  const [division, setDivision] = useState("");
+  const [gender, setGender] = useState("");
+  const [armPreference, setArmPreference] = useState("");
+  const [availableWeightCategories, setAvailableWeightCategories] = useState(
+    []
+  );
 
   useEffect(() => {
     if (isOpen && tournamentId) {
-      // dispatch(fetchTournamentById(tournamentId));
+      console.log("EditTournamentModal useEffect: ", tournamentId);
+      dispatch(fetchTournamentById(tournamentId));
       dispatch(fetchContestantsByTournamentId(tournamentId));
     }
   }, [dispatch, tournamentId, isOpen]);
 
   useEffect(() => {
-    if (!isOpen) {
-      resetForm();
-    }
+    if (!isOpen) resetForm();
   }, [isOpen]);
 
   const resetForm = () => {
@@ -74,7 +75,6 @@ const EditTournamentModal = ({ tournamentId, isOpen, onClose }) => {
 
   const handleAddContestant = async (e) => {
     e.preventDefault();
-
     if (!contestantName.trim()) {
       showSnackbar("Contestant name cannot be empty.", "warning");
       return;
@@ -95,7 +95,7 @@ const EditTournamentModal = ({ tournamentId, isOpen, onClose }) => {
       WeightKg: parseFloat(weightKg),
       Division: division,
     };
-    console.log("Contestant Data in EditTournament: ", contestantData);
+
     try {
       await dispatch(
         addContestantToTournament({
@@ -103,9 +103,9 @@ const EditTournamentModal = ({ tournamentId, isOpen, onClose }) => {
           contestantData,
         })
       ).unwrap();
-      //dispatch(fetchContestantsByTournamentId(tournament.id));
       resetForm();
       showSnackbar("Contestant added successfully!", "success");
+      dispatch(fetchContestantsByTournamentId(tournamentId));
     } catch (error) {
       console.error("Error adding contestant:", error);
       showSnackbar("Failed to add contestant.", "error");
@@ -121,6 +121,7 @@ const EditTournamentModal = ({ tournamentId, isOpen, onClose }) => {
         })
       ).unwrap();
       showSnackbar("Contestant removed successfully!", "success");
+      dispatch(fetchContestantsByTournamentId(tournamentId));
     } catch (error) {
       console.error("Error removing contestant:", error);
       showSnackbar("Failed to remove contestant.", "error");
@@ -133,7 +134,7 @@ const EditTournamentModal = ({ tournamentId, isOpen, onClose }) => {
         <span className="close" onClick={onClose}>
           &times;
         </span>
-        <h3>{tournament.name}</h3>
+        <h3>{tournament.Name}</h3>
 
         <form onSubmit={handleAddContestant} className="add-contestant-form">
           <h4>Add Contestant</h4>
@@ -230,7 +231,7 @@ const EditTournamentModal = ({ tournamentId, isOpen, onClose }) => {
                     </span>
                     <span>
                       {contestant.Gender === "M" ? "Male" : "Female"} -{" "}
-                      {contestant.Division || "N/A"}{" "}
+                      {contestant.Division || "N/A"}
                     </span>
 
                     <Stack

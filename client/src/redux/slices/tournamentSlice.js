@@ -1,13 +1,14 @@
-// src/redux/tournamentSlice.js
+// src/redux/slices/tournamentSlice.js
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import tournamentAPI from "../../api/tournamentAPI"; // Adjust the import path as needed
+import tournamentAPI from "../../api/tournamentAPI";
 
 // Async actions
 export const fetchAllTournaments = createAsyncThunk(
   "tournaments/fetchAllTournaments",
   async () => {
     const response = await tournamentAPI.getAllTournaments();
-    return response; // Assuming this is an array of tournaments
+    console.log("TournamentSlice response:", response);
+    return response; // Return only data here
   }
 );
 
@@ -16,7 +17,7 @@ export const fetchTournamentById = createAsyncThunk(
   async (id) => {
     const response = await tournamentAPI.getTournamentById(id);
     console.log("Fetched tournament data: ", response);
-    return response; // Returning the tournament data
+    return response; // Ensure only the data is returned
   }
 );
 
@@ -24,7 +25,7 @@ export const createTournament = createAsyncThunk(
   "tournaments/createTournament",
   async (tournamentData) => {
     const response = await tournamentAPI.createTournament(tournamentData);
-    return response; // Returning the newly created tournament
+    return response; // Return data only
   }
 );
 
@@ -32,7 +33,7 @@ export const updateTournament = createAsyncThunk(
   "tournaments/updateTournament",
   async ({ id, tournamentData }) => {
     const response = await tournamentAPI.updateTournament(id, tournamentData);
-    return response; // Returning the updated tournament
+    return response.data; // Return data only
   }
 );
 
@@ -40,11 +41,10 @@ export const deleteTournament = createAsyncThunk(
   "tournaments/deleteTournament",
   async (id) => {
     await tournamentAPI.deleteTournament(id);
-    return id; // Returning the ID of the deleted tournament
+    return id; // Return only the ID of the deleted tournament
   }
 );
 
-// FIX THIS?!?!?!
 export const addContestantToTournament = createAsyncThunk(
   "tournaments/addContestantToTournament",
   async ({ tournamentId, contestantData }) => {
@@ -52,7 +52,7 @@ export const addContestantToTournament = createAsyncThunk(
       tournamentId,
       contestantData
     );
-    return response; // Returning the added contestant data
+    return response.data; // Return data only
   }
 );
 
@@ -68,7 +68,7 @@ const tournamentSlice = createSlice({
     clearSelectedTournament: (state) => {
       state.selectedTournament = null;
     },
-    setSelectedTournament(state, action) {
+    setSelectedTournament: (state, action) => {
       state.selectedTournament = action.payload;
     },
   },
@@ -109,6 +109,13 @@ const tournamentSlice = createSlice({
   },
 });
 
+// Selectors
+export const selectTournaments = (state) => state.tournaments.tournaments || [];
+export const selectSelectedTournament = (state) =>
+  state.tournaments.selectedTournament;
+
+// Export actions and reducer
 export const { clearSelectedTournament, setSelectedTournament } =
   tournamentSlice.actions;
+
 export default tournamentSlice.reducer;

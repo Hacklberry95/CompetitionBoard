@@ -83,29 +83,32 @@ class Contestant {
     );
   }
 
-  static delete(db, id, callback) {
-    const query = `DELETE FROM Contestants WHERE id = ?;`;
-    db.run(query, [id], function (err) {
-      callback(err);
+  static delete(db, id) {
+    return new Promise((resolve, reject) => {
+      const query = `DELETE FROM Contestants WHERE id = ?;`;
+      db.run(query, [id], function (err) {
+        if (err) {
+          console.error("Error deleting contestant:", err.message);
+          return reject(err);
+        }
+        if (this.changes === 0) {
+          return reject(
+            new Error("No contestant found with the specified ID.")
+          );
+        }
+        resolve({ message: "Contestant deleted successfully." });
+      });
     });
   }
 
   static findByTournamentId(db, tournamentId) {
     const query = `SELECT * FROM Contestants WHERE TournamentId = ?`;
-    console.log(`Querying contestants for TournamentId: ${tournamentId}`);
 
     return new Promise((resolve, reject) => {
       db.all(query, [tournamentId], (err, rows) => {
         if (err) {
-          console.error(
-            "Error finding contestants by tournament ID:",
-            err.message
-          );
           reject(err);
         } else {
-          console.log(
-            `Found ${rows.length} contestants for tournament ${tournamentId}`
-          );
           resolve(rows);
         }
       });

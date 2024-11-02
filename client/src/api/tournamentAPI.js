@@ -6,6 +6,7 @@ const tournamentAPI = {
   createTournament: async (tournamentData) => {
     try {
       const response = await axios.post(API_URL, tournamentData);
+      console.log("Tournament Creation reponse: ", response.data);
       return response.data;
     } catch (error) {
       throw error.response.data;

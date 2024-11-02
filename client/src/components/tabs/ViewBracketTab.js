@@ -1,10 +1,10 @@
 // src/tabs/ViewBracketTab.js
 import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import BracketVisualizer from "../tabComponents/BracketVisualizer";
 import "../../styles/ViewBracketTab.css";
 import { useAlert } from "../../context/AlertContext";
 import ConfirmationDialog from "../helpers/ConfirmationDialog";
-import { useDispatch, useSelector } from "react-redux";
 import {
   deleteAllBrackets,
   clearBrackets,
@@ -17,13 +17,12 @@ import { fetchContestantsForMatches } from "../../redux/slices/contestantSlice";
 const ViewBracketTab = ({ selectedTournament }) => {
   const dispatch = useDispatch();
   const { showSnackbar } = useAlert();
-
   const brackets = useSelector((state) => state.brackets.brackets);
-  const loadingBrackets = useSelector((state) => state.brackets.loading);
   const matches = useSelector((state) => state.matches.matches);
   const contestantsMap = useSelector(
     (state) => state.contestants.contestantsMap
   );
+  const loadingBrackets = useSelector((state) => state.brackets.loading);
   const error = useSelector(
     (state) =>
       state.brackets.error || state.matches.error || state.contestants.error
@@ -76,6 +75,7 @@ const ViewBracketTab = ({ selectedTournament }) => {
         {brackets.length > 0 && (
           <div className="dropdown-container">
             <select
+              id="bracket-select"
               value={selectedBracket || ""}
               onChange={(e) => setSelectedBracket(e.target.value)}
             >
@@ -90,8 +90,10 @@ const ViewBracketTab = ({ selectedTournament }) => {
       </div>
 
       <div className="actions">
-        <button onClick={handleGenerateBrackets}>Generate Brackets</button>
-        <button onClick={() => setIsDialogOpen(true)}>
+        <button className="button" onClick={handleGenerateBrackets}>
+          Generate Brackets
+        </button>
+        <button className="button" onClick={() => setIsDialogOpen(true)}>
           Delete All Brackets
         </button>
       </div>

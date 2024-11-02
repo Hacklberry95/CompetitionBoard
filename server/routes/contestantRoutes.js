@@ -5,23 +5,25 @@ const Contestant = require("../models/contestant");
 const db = require("../db");
 
 // Get all contestants for a specific tournament
-router.get("/contestants/tournament/:tournamentId", (req, res) => {
+router.get("/contestants/tournament/:tournamentId", async (req, res) => {
   const { tournamentId } = req.params;
 
-  Contestant.findByTournamentId(db, tournamentId, (err, contestants) => {
-    if (err) {
-      console.error("Error fetching contestants:", err.message);
-      return res
-        .status(500)
-        .json({ message: "Error fetching contestants", error: err });
-    }
+  try {
+    const contestants = await Contestant.findByTournamentId(db, tournamentId);
+
     if (contestants.length === 0) {
-      console.log(`No contestants found for tournament ID ${tournamentId}`);
       return res.status(404).json({ message: "No contestants found" });
     }
+
     return res.json(contestants);
-  });
+  } catch (err) {
+    console.error("Error fetching contestants:", err.message);
+    return res
+      .status(500)
+      .json({ message: "Error fetching contestants", error: err });
+  }
 });
+
 // Get contestant by Id
 router.get("/contestants/:id", (req, res) => {
   const { id } = req.params;
@@ -118,32 +120,30 @@ router.post("/contestants/:tournamentId/contestants", (req, res) => {
   });
 });
 
-// Delete a contestant by tournamentId and contestantId
-router.delete("/contestants/:tournamentId/:contestantId", (req, res) => {
+// contestantRoutes.js
+router.delete("/contestants/:tournamentId/:contestantId", async (req, res) => {
   const { tournamentId, contestantId } = req.params;
+  console.log("Delete request received for:", { tournamentId, contestantId });
 
-  Contestant.findByTournamentId(db, tournamentId, (err, contestants) => {
-    if (err) {
-      return res
-        .status(500)
-        .json({ message: "Error fetching contestants", error: err.message });
-    }
+  try {
+    const contestants = await Contestant.findByTournamentId(db, tournamentId);
     const contestant = contestants.find(
       (c) => c.id === parseInt(contestantId, 10)
     );
+
     if (!contestant) {
       return res.status(404).json({ message: "Contestant not found." });
     }
+
     // Proceed with deletion
-    Contestant.delete(db, contestantId, (err) => {
-      if (err) {
-        return res
-          .status(500)
-          .json({ message: "Error deleting contestant", error: err.message });
-      }
-      return res.json({ message: "Contestant deleted successfully!" });
-    });
-  });
+    const result = await Contestant.delete(db, contestantId);
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Error deleting contestant:", error.message);
+    res
+      .status(500)
+      .json({ message: "Error deleting contestant", error: error.message });
+  }
 });
 
 module.exports = router;
