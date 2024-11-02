@@ -39,7 +39,6 @@ const EditTournamentModal = ({ tournamentId, isOpen, onClose }) => {
 
   useEffect(() => {
     if (isOpen && tournamentId) {
-      console.log("EditTournamentModal useEffect: ", tournamentId);
       dispatch(fetchTournamentById(tournamentId));
       dispatch(fetchContestantsByTournamentId(tournamentId));
     }

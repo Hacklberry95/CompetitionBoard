@@ -7,7 +7,6 @@ export const fetchAllTournaments = createAsyncThunk(
   "tournaments/fetchAllTournaments",
   async () => {
     const response = await tournamentAPI.getAllTournaments();
-    console.log("TournamentSlice response:", response);
     return response; // Return only data here
   }
 );
@@ -16,7 +15,6 @@ export const fetchTournamentById = createAsyncThunk(
   "tournaments/fetchTournamentById",
   async (id) => {
     const response = await tournamentAPI.getTournamentById(id);
-    console.log("Fetched tournament data: ", response);
     return response; // Ensure only the data is returned
   }
 );

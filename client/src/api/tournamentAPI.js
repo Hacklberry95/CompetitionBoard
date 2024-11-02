@@ -6,7 +6,6 @@ const tournamentAPI = {
   createTournament: async (tournamentData) => {
     try {
       const response = await axios.post(API_URL, tournamentData);
-      console.log("Tournament Creation reponse: ", response.data);
       return response.data;
     } catch (error) {
       throw error.response.data;
@@ -15,7 +14,6 @@ const tournamentAPI = {
   getAllTournaments: async () => {
     try {
       const response = await axios.get(API_URL);
-      console.log("API response for tournaments: ", response.data);
       return response.data;
     } catch (error) {
       throw error.response.data;

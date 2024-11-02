@@ -1,5 +1,5 @@
 // src/pages/Homepage.js
-import React from "react";
+import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   setSelectedTournament,
@@ -22,6 +22,11 @@ const Homepage = () => {
   const handleTournamentChange = (event) => {
     dispatch(setSelectedTournament(event.target.value));
   };
+  useEffect(() => {
+    if (!selectedTournament && tournaments.length > 0) {
+      dispatch(setSelectedTournament(tournaments[0].id));
+    }
+  }, [selectedTournament, tournaments, dispatch]);
 
   // Render selected tab
   const renderTabContent = () => {
