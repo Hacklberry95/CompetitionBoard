@@ -3,7 +3,8 @@ import { Bracket } from "react-brackets";
 import contestantAPI from "../../api/contestantsAPI"; // Import your contestant API
 
 const BracketVisualizer = ({ matches }) => {
-  const [rounds, setRounds] = useState([]);
+  const [winnersRounds, setWinnersRounds] = useState([]);
+  const [losersRounds, setLosersRounds] = useState([]);
   const [contestantsMap, setContestantsMap] = useState({}); // Store contestants by ID
 
   useEffect(() => {
@@ -32,28 +33,37 @@ const BracketVisualizer = ({ matches }) => {
 
         setContestantsMap(newContestantsMap);
 
-        // Now organize rounds after contestantsMap is populated
-        const organizedRounds = [];
-        matches.forEach((match) => {
-          const roundIndex = match.RoundNumber || 0; // Make sure to use the correct property
-          if (!organizedRounds[roundIndex]) {
-            organizedRounds[roundIndex] = {
-              title: `Round ${roundIndex + 1}`,
-              seeds: [],
-            };
-          }
+        // Separate matches into winners' and losers' brackets
+        const winnersBracket = matches.filter(
+          (match) => !match.isLosersBracket
+        );
+        const losersBracket = matches.filter((match) => match.isLosersBracket);
 
-          organizedRounds[roundIndex].seeds.push({
-            id: match.id,
-            teams: [
-              { name: newContestantsMap[match.Participant1Id] || "NO TEAM" },
-              { name: newContestantsMap[match.Participant2Id] || "NO TEAM" },
-            ],
-            winner: match.WinnerId,
+        const organizeRounds = (matchesArray) => {
+          const organizedRounds = [];
+          matchesArray.forEach((match) => {
+            const roundIndex = match.RoundNumber || 0;
+            if (!organizedRounds[roundIndex]) {
+              organizedRounds[roundIndex] = {
+                title: `Round ${roundIndex + 1}`,
+                seeds: [],
+              };
+            }
+
+            organizedRounds[roundIndex].seeds.push({
+              id: match.id,
+              teams: [
+                { name: newContestantsMap[match.Participant1Id] || "NO TEAM" },
+                { name: newContestantsMap[match.Participant2Id] || "NO TEAM" },
+              ],
+              winner: match.WinnerId,
+            });
           });
-        });
+          return organizedRounds;
+        };
 
-        setRounds(organizedRounds);
+        setWinnersRounds(organizeRounds(winnersBracket));
+        setLosersRounds(organizeRounds(losersBracket));
       } catch (error) {
         console.error("Error fetching contestants:", error);
       }
@@ -62,7 +72,14 @@ const BracketVisualizer = ({ matches }) => {
     fetchContestants();
   }, [matches]);
 
-  return <Bracket rounds={rounds} />;
+  return (
+    <div>
+      <h3>Winners' Bracket</h3>
+      <Bracket rounds={winnersRounds} />
+      <h3>Losers' Bracket</h3>
+      <Bracket rounds={losersRounds} />
+    </div>
+  );
 };
 
 export default BracketVisualizer;

@@ -33,7 +33,7 @@ const Homepage = () => {
     return activeTab === "bracketViewer" ? (
       <ViewBracketTab selectedTournament={selectedTournament} />
     ) : (
-      <ViewTournamentsTab selectedTournament={selectedTournament} />
+      <ViewTournamentsTab />
     );
   };
 

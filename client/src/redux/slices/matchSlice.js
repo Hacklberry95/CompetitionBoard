@@ -35,6 +35,11 @@ const matchSlice = createSlice({
     loading: false,
     error: null,
   },
+  reducers: {
+    clearMatches: (state) => {
+      state.matches = []; // Clear matches state
+    },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(fetchMatchesByTournamentId.pending, (state) => {
@@ -62,4 +67,5 @@ const matchSlice = createSlice({
   },
 });
 
+export const { clearMatches } = matchSlice.actions;
 export default matchSlice.reducer;

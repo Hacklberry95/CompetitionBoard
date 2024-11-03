@@ -1,4 +1,3 @@
-// src/redux/slices/bracketSlice.js
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import bracketAPI from "../../api/bracketAPI";
 
@@ -6,8 +5,7 @@ import bracketAPI from "../../api/bracketAPI";
 export const fetchBracketsByTournamentId = createAsyncThunk(
   "brackets/fetchByTournamentId",
   async (tournamentId) => {
-    const response = await bracketAPI.getBracketsByTournamentId(tournamentId);
-    return response; // Directly return the data
+    return await bracketAPI.getBracketsByTournamentId(tournamentId);
   }
 );
 
@@ -16,23 +14,21 @@ export const generateBracketsForTournament = createAsyncThunk(
   "brackets/generateForTournament",
   async (tournamentId, { rejectWithValue }) => {
     try {
-      const response = await bracketAPI.getGeneratedBrackets(tournamentId);
-      return response; // Directly return the success message
+      return await bracketAPI.getGeneratedBrackets(tournamentId);
     } catch (error) {
-      return rejectWithValue("Failed to generate brackets.");
+      return rejectWithValue(error.message);
     }
   }
 );
 
-// Async thunk to delete all brackets for a tournament
+// Async thunk to delete all brackets
 export const deleteAllBrackets = createAsyncThunk(
   "brackets/deleteAll",
   async (tournamentId, { rejectWithValue }) => {
     try {
-      const response = await bracketAPI.deleteGenerateBrackets(tournamentId);
-      return response; // Directly return the success message
+      return await bracketAPI.deleteGenerateBrackets(tournamentId);
     } catch (error) {
-      return rejectWithValue("Failed to delete brackets.");
+      return rejectWithValue(error.message);
     }
   }
 );
@@ -58,35 +54,37 @@ const bracketSlice = createSlice({
       .addCase(fetchBracketsByTournamentId.fulfilled, (state, action) => {
         state.loading = false;
         state.brackets = action.payload;
+        state.error = null;
       })
-      .addCase(fetchBracketsByTournamentId.rejected, (state) => {
+      .addCase(fetchBracketsByTournamentId.rejected, (state, action) => {
         state.loading = false;
-        state.error = "Failed to fetch brackets.";
+        state.error = action.payload; // Show the error message from the action
       })
-
       // Generate brackets
       .addCase(generateBracketsForTournament.pending, (state) => {
         state.loading = true;
       })
       .addCase(generateBracketsForTournament.fulfilled, (state, action) => {
         state.loading = false;
+        state.brackets = action.payload.data; // Assuming the data structure is as needed
+        state.error = null;
       })
       .addCase(generateBracketsForTournament.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload; // Show the error message from the action
       })
-
       // Delete all brackets
       .addCase(deleteAllBrackets.pending, (state) => {
         state.loading = true;
       })
-      .addCase(deleteAllBrackets.fulfilled, (state) => {
+      .addCase(deleteAllBrackets.fulfilled, (state, action) => {
         state.loading = false;
-        state.brackets = []; // Clear brackets on success
+        state.brackets = [];
+        state.error = null;
       })
       .addCase(deleteAllBrackets.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload; // Show the error message from the action
       });
   },
 });

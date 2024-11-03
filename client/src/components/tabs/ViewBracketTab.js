@@ -1,4 +1,3 @@
-// src/tabs/ViewBracketTab.js
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import BracketVisualizer from "../tabComponents/BracketVisualizer";
@@ -11,7 +10,10 @@ import {
   generateBracketsForTournament,
   fetchBracketsByTournamentId,
 } from "../../redux/slices/bracketSlice";
-import { fetchMatchesByBracketId } from "../../redux/slices/matchSlice";
+import {
+  fetchMatchesByBracketId,
+  clearMatches,
+} from "../../redux/slices/matchSlice";
 import { fetchContestantsForMatches } from "../../redux/slices/contestantSlice";
 
 const ViewBracketTab = ({ selectedTournament }) => {
@@ -24,48 +26,95 @@ const ViewBracketTab = ({ selectedTournament }) => {
   );
   const loadingBrackets = useSelector((state) => state.brackets.loading);
   const error = useSelector(
-    (state) =>
-      state.brackets.error || state.matches.error || state.contestants.error
+    (state) => state.brackets.error || state.matches.error
   );
 
   const [selectedBracket, setSelectedBracket] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   useEffect(() => {
-    if (selectedTournament) {
-      dispatch(fetchBracketsByTournamentId(selectedTournament)).then(
-        (result) => {
-          if (result.payload?.length) setSelectedBracket(result.payload[0].id);
+    console.log("Updated brackets:", brackets);
+  }, [brackets]);
+
+  useEffect(() => {
+    const fetchBrackets = async () => {
+      if (selectedTournament) {
+        await dispatch(fetchBracketsByTournamentId(selectedTournament));
+        if (brackets.length > 0) {
+          setSelectedBracket(brackets[0].id);
+        } else {
+          setSelectedBracket(null); // Clear selection if no brackets
         }
-      );
-    } else {
-      dispatch(clearBrackets());
-      setSelectedBracket(null);
-    }
+      } else {
+        dispatch(clearBrackets());
+        setSelectedBracket(null);
+      }
+    };
+
+    fetchBrackets();
   }, [selectedTournament, dispatch]);
 
   useEffect(() => {
-    if (selectedBracket) {
-      dispatch(fetchMatchesByBracketId(selectedBracket)).then((result) => {
+    const fetchMatchesAndContestants = async () => {
+      if (selectedBracket) {
+        const result = await dispatch(fetchMatchesByBracketId(selectedBracket));
         const participantIds = result.payload?.flatMap((match) => [
           match.Participant1Id,
           match.Participant2Id,
         ]);
-        dispatch(fetchContestantsForMatches(participantIds));
-      });
-    }
+        if (participantIds) {
+          await dispatch(fetchContestantsForMatches(participantIds));
+        }
+      } else {
+        // Clear matches when there is no selected bracket
+        dispatch(clearMatches());
+      }
+    };
+
+    fetchMatchesAndContestants();
   }, [selectedBracket, dispatch]);
 
   const handleGenerateBrackets = async () => {
-    await dispatch(generateBracketsForTournament(selectedTournament));
-    dispatch(fetchBracketsByTournamentId(selectedTournament));
+    const response = await dispatch(
+      generateBracketsForTournament(selectedTournament)
+    );
+
+    if (generateBracketsForTournament.fulfilled.match(response)) {
+      const newBracketId = await dispatch(
+        fetchBracketsByTournamentId(selectedTournament)
+      );
+      if (newBracketId.payload.length > 0) {
+        setSelectedBracket(newBracketId.payload[0].id);
+      }
+      showSnackbar(
+        response.payload.message || "Brackets generated successfully!",
+        "success"
+      );
+    } else {
+      showSnackbar(
+        response.payload || "Error while generating brackets!",
+        "error"
+      );
+    }
   };
 
   const handleDeleteBrackets = async () => {
-    await dispatch(deleteAllBrackets(selectedTournament));
-    dispatch(fetchBracketsByTournamentId(selectedTournament));
-    setSelectedBracket(null);
-    setIsDialogOpen(false);
+    const response = await dispatch(deleteAllBrackets(selectedTournament));
+
+    if (deleteAllBrackets.fulfilled.match(response)) {
+      await dispatch(fetchBracketsByTournamentId(selectedTournament));
+      setSelectedBracket(null);
+      setIsDialogOpen(false);
+      showSnackbar(
+        response.payload.message || "Brackets deleted successfully!",
+        "success"
+      );
+    } else {
+      showSnackbar(
+        response.payload || "Error while deleting brackets!",
+        "error"
+      );
+    }
   };
 
   return (
@@ -99,7 +148,6 @@ const ViewBracketTab = ({ selectedTournament }) => {
       </div>
 
       {loadingBrackets && <p>Loading brackets...</p>}
-      {error && <p>{error}</p>}
       <BracketVisualizer matches={matches} contestantsMap={contestantsMap} />
 
       <ConfirmationDialog
