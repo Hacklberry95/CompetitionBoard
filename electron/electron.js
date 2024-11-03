@@ -1,43 +1,27 @@
-const { app, BrowserWindow, screen } = require("electron");
-const { spawn } = require("child_process");
+const { app, BrowserWindow, ipcMain, screen } = require("electron");
 const path = require("path");
 const {
   default: installExtension,
   REDUX_DEVTOOLS,
   REACT_DEVELOPER_TOOLS,
 } = require("electron-devtools-installer");
+
 const isDev = process.env.NODE_ENV !== "production";
 let mainWindow;
-let reactProcess;
 
 function createWindow() {
-  console.log("Creating Electron window...");
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
   mainWindow = new BrowserWindow({
-    width: width,
-    height: height,
+    width,
+    height,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: true,
       enableRemoteModule: false,
-      webPreferences: {
-        devTools: isDev,
-      },
+      preload: path.join(__dirname, "preload.js"), // Load preload script
     },
   });
 
-  if (isDev) {
-    // Errors are thrown if the dev tools are opened
-    // before the DOM is ready
-    mainWindow.webContents.once("dom-ready", async () => {
-      await installExtension([REDUX_DEVTOOLS, REACT_DEVELOPER_TOOLS])
-        .then((name) => console.log(`Added Extension:  ${name}`))
-        .catch((err) => console.log("An error occurred: ", err))
-        .finally(() => {
-          mainWindow.webContents.openDevTools();
-        });
-    });
-  }
   setTimeout(() => {
     mainWindow
       .loadURL("http://localhost:3000")
@@ -48,18 +32,26 @@ function createWindow() {
   }, 1500);
 
   mainWindow.on("closed", () => {
-    if (reactProcess) {
-      reactProcess.kill("SIGINT");
-    }
     mainWindow = null;
   });
 }
 
-app.on("ready", () => {
-  console.log("Electron app is ready");
-  createWindow();
+app.on("ready", async () => {
+  if (isDev) {
+    // Install Redux and React DevTools extensions
+    await installExtension([REDUX_DEVTOOLS, REACT_DEVELOPER_TOOLS])
+      .then((name) => console.log(`Added Extension:  ${name}`))
+      .catch((err) => console.log("An error occurred: ", err));
+  }
 
-  mainWindow.on("closed", () => (mainWindow = null));
+  createWindow();
+});
+
+// Listen for the 'store-ready' event from the renderer process
+ipcMain.on("store-ready", () => {
+  if (isDev) {
+    mainWindow.webContents.openDevTools();
+  }
 });
 
 app.on("window-all-closed", () => {
@@ -67,6 +59,7 @@ app.on("window-all-closed", () => {
     app.quit();
   }
 });
+
 app.on("activate", () => {
   if (mainWindow === null) {
     createWindow();
