@@ -244,7 +244,7 @@ async function createMatchesAndEntries(brackets, db, tournamentId) {
           const match = await Match.create(
             db,
             bracketId,
-            1,
+            0,
             Math.floor(i / 2) + 1,
             c1.id,
             c2.id

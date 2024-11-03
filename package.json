@@ -28,6 +28,8 @@
   },
   "homepage": "https://github.com/Hacklberry95/CompetitionBoard#readme",
   "dependencies": {
-    "again": "^0.0.1"
+    "again": "^0.0.1",
+    "electron-devtools-installer": "^3.2.0",
+    "redux-devtools-extension": "^2.13.9"
   }
 }

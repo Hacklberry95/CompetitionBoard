@@ -28,7 +28,6 @@ const Homepage = () => {
     }
   }, [selectedTournament, tournaments, dispatch]);
 
-  // Render selected tab
   const renderTabContent = () => {
     return activeTab === "bracketViewer" ? (
       <ViewBracketTab selectedTournament={selectedTournament} />

@@ -39,7 +39,7 @@ const ViewBracketTab = ({ selectedTournament }) => {
   useEffect(() => {
     const fetchBrackets = async () => {
       if (selectedTournament) {
-        await dispatch(fetchBracketsByTournamentId(selectedTournament));
+        dispatch(fetchBracketsByTournamentId(selectedTournament));
         if (brackets.length > 0) {
           setSelectedBracket(brackets[0].id);
         } else {
@@ -66,7 +66,6 @@ const ViewBracketTab = ({ selectedTournament }) => {
           await dispatch(fetchContestantsForMatches(participantIds));
         }
       } else {
-        // Clear matches when there is no selected bracket
         dispatch(clearMatches());
       }
     };
@@ -130,7 +129,15 @@ const ViewBracketTab = ({ selectedTournament }) => {
             >
               {brackets.map((bracket) => (
                 <option key={bracket.id} value={bracket.id}>
-                  {bracket.Division} | {bracket.Gender} | {bracket.WeightClass}
+                  {bracket.Division} | {bracket.Gender} | {bracket.WeightClass}{" "}
+                  |{" "}
+                  {bracket.Arm === "R"
+                    ? "Right"
+                    : bracket.Arm === "L"
+                    ? "Left"
+                    : bracket.Arm === "B"
+                    ? "Both"
+                    : "N/A"}
                 </option>
               ))}
             </select>

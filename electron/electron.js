@@ -1,7 +1,11 @@
 const { app, BrowserWindow, screen } = require("electron");
 const { spawn } = require("child_process");
 const path = require("path");
-
+const {
+  default: installExtension,
+  REDUX_DEVTOOLS,
+  REACT_DEVELOPER_TOOLS,
+} = require("electron-devtools-installer");
 const isDev = process.env.NODE_ENV !== "production";
 let mainWindow;
 let reactProcess;
@@ -16,11 +20,23 @@ function createWindow() {
       nodeIntegration: true,
       contextIsolation: true,
       enableRemoteModule: false,
+      webPreferences: {
+        devTools: isDev,
+      },
     },
   });
 
   if (isDev) {
-    mainWindow.webContents.openDevTools();
+    // Errors are thrown if the dev tools are opened
+    // before the DOM is ready
+    mainWindow.webContents.once("dom-ready", async () => {
+      await installExtension([REDUX_DEVTOOLS, REACT_DEVELOPER_TOOLS])
+        .then((name) => console.log(`Added Extension:  ${name}`))
+        .catch((err) => console.log("An error occurred: ", err))
+        .finally(() => {
+          mainWindow.webContents.openDevTools();
+        });
+    });
   }
   setTimeout(() => {
     mainWindow

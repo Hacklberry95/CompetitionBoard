@@ -4,6 +4,7 @@ import tournamentReducer from "./slices/tournamentSlice";
 import bracketReducer from "./slices/bracketSlice";
 import contestantReducer from "./slices/contestantSlice";
 import matchReducer from "./slices/matchSlice";
+import { composeWithDevTools } from "redux-devtools-extension";
 
 const store = configureStore({
   reducer: {
@@ -12,6 +13,7 @@ const store = configureStore({
     contestants: contestantReducer,
     matches: matchReducer,
   },
+  composeWithDevTools,
 });
 
 export default store;
