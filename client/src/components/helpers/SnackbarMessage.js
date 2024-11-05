@@ -1,6 +1,5 @@
-// src/components/SnackbarMessage.js
+// src/components/AlertMessage.js
 import React from "react";
-import Snackbar from "@mui/material/Snackbar";
 import MuiAlert from "@mui/material/Alert";
 import { useAlert } from "../../context/AlertContext";
 
@@ -8,28 +7,26 @@ const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
 });
 
-const SnackbarMessage = () => {
+const AlertMessage = () => {
   const { snackbar, showSnackbar } = useAlert();
 
-  const handleClose = (event, reason) => {
-    if (reason === "clickaway") {
-      return;
-    }
+  const handleClose = () => {
     showSnackbar("");
   };
 
   return (
-    <Snackbar
-      open={snackbar.open}
-      autoHideDuration={3000}
-      onClose={handleClose}
-      anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
-    >
-      <Alert onClose={handleClose} severity={snackbar.severity}>
-        {snackbar.message}
-      </Alert>
-    </Snackbar>
+    snackbar.open && (
+      <div style={{ position: "fixed", bottom: 16, left: 16, zIndex: 1300 }}>
+        <Alert
+          onClose={handleClose}
+          severity={snackbar.severity}
+          style={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </div>
+    )
   );
 };
 
-export default SnackbarMessage;
+export default AlertMessage;

@@ -11,7 +11,7 @@ class Contestant {
         WeightKg REAL,
         ArmPreference TEXT,
         Division TEXT,
-        FOREIGN KEY (TournamentId) REFERENCES Tournaments(id)
+        FOREIGN KEY (TournamentId) REFERENCES Tournaments(id) ON DELETE CASCADE
       );
     `;
     db.run(query, (err) => {

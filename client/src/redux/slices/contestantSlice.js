@@ -18,6 +18,7 @@ export const fetchContestantsByTournamentId = createAsyncThunk(
     const contestants = await contestantsAPI.getContestantsByTournamentId(
       tournamentId
     );
+    console.log("ContestantSlice: ", contestants);
     return contestants;
   }
 );

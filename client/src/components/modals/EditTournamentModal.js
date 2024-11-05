@@ -96,6 +96,7 @@ const EditTournamentModal = ({ tournamentId, isOpen, onClose }) => {
     };
 
     try {
+      console.log("CONTESTANT DATA: ", contestantData);
       await dispatch(
         addContestantToTournament({
           tournamentId: tournament.id,
@@ -103,8 +104,8 @@ const EditTournamentModal = ({ tournamentId, isOpen, onClose }) => {
         })
       ).unwrap();
       resetForm();
-      showSnackbar("Contestant added successfully!", "success");
       dispatch(fetchContestantsByTournamentId(tournamentId));
+      showSnackbar("Contestant added successfully!", "success");
     } catch (error) {
       console.error("Error adding contestant:", error);
       showSnackbar("Failed to add contestant.", "error");

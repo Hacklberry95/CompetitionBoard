@@ -1,3 +1,4 @@
+// src/components/tabs/ViewBracketTab.js
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import BracketVisualizer from "../tabComponents/BracketVisualizer";
@@ -16,10 +17,14 @@ import {
   clearMatches,
 } from "../../redux/slices/matchSlice";
 import { fetchContestantsForMatches } from "../../redux/slices/contestantSlice";
+import { selectSelectedTournament } from "../../redux/slices/tournamentSlice";
 
-const ViewBracketTab = ({ selectedTournament }) => {
+const ViewBracketTab = () => {
   const dispatch = useDispatch();
   const { showSnackbar } = useAlert();
+
+  const selectedTournament = useSelector(selectSelectedTournament);
+
   const brackets = useSelector((state) => state.brackets.brackets);
   const matches = useSelector((state) => state.matches.matches);
   const contestantsMap = useSelector(
@@ -40,7 +45,7 @@ const ViewBracketTab = ({ selectedTournament }) => {
         await dispatch(fetchBracketsByTournamentId(selectedTournament));
       } else {
         dispatch(clearBrackets());
-        dispatch(setSelectedBracket(null)); // Reset selectedBracket in Redux
+        dispatch(setSelectedBracket(null));
       }
     };
 
@@ -49,7 +54,7 @@ const ViewBracketTab = ({ selectedTournament }) => {
 
   useEffect(() => {
     if (brackets.length > 0) {
-      dispatch(setSelectedBracket(brackets[0].id)); // Set first bracket as default in Redux
+      dispatch(setSelectedBracket(brackets[0].id));
     } else {
       dispatch(setSelectedBracket(null));
     }

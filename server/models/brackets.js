@@ -96,6 +96,17 @@ class Brackets {
     db.get(query, [id], callback);
   }
 
+  static exists(db, tournamentId) {
+    return new Promise((resolve, reject) => {
+      const query = `SELECT COUNT(*) AS count FROM Brackets WHERE TournamentId = ?`;
+      db.get(query, [tournamentId], (err, row) => {
+        if (err) {
+          return reject(err);
+        }
+        resolve(row.count > 0);
+      });
+    });
+  }
   static update(
     db,
     id,

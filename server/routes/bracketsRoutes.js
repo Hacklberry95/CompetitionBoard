@@ -106,6 +106,16 @@ router.delete("/brackets/:tournamentId/deleteAll", async (req, res) => {
   const { tournamentId } = req.params;
 
   try {
+    // Step 1: Check if there are any brackets for the tournament
+    const bracketsExist = await Bracket.exists(db, tournamentId); // Assumes Bracket.exists method returns true if any brackets exist
+
+    if (!bracketsExist) {
+      return res.status(404).json({
+        message: "No brackets found for the specified tournament.",
+      });
+    }
+
+    // Step 2: Delete related entries, matches, and brackets
     await Promise.all([
       BracketEntries.deleteAll(db, tournamentId),
       Match.deleteAll(db, tournamentId),

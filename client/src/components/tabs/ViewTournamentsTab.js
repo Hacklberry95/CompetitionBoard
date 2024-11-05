@@ -165,7 +165,7 @@ const ViewTournamentsTab = () => {
         open={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}
         onConfirm={handleConfirmDelete}
-        message={`Are you sure you want to delete the tournament "${selectedTournamentForDeletion?.Name}"?`}
+        message={`Are you sure you want to delete the tournament "${selectedTournamentForDeletion?.Name}"? This will also delete all contestants in the tournament!`}
       />
     </div>
   );
