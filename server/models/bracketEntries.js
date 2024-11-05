@@ -61,10 +61,26 @@ class BracketEntries {
       callback(err);
     });
   }
-  static deleteAll(db, callback) {
-    const query = `DELETE FROM BracketEntries;`;
-    db.all(query, callback);
+  static deleteAll(db, tournamentId) {
+    const query = `
+    DELETE FROM BracketEntries
+    WHERE bracketId IN (
+      SELECT id FROM Brackets WHERE tournamentId = ?
+    );
+  `;
+
+    return new Promise((resolve, reject) => {
+      db.run(query, [tournamentId], function (err) {
+        if (err) {
+          console.error("Error deleting bracket entries:", err.message);
+          return reject(err);
+        }
+        console.log("Bracket entries deleted successfully.");
+        resolve();
+      });
+    });
   }
+
   static deleteByBracketId(db, bracketId, callback) {
     const query = `DELETE FROM BracketEntries WHERE id = ?;`;
     db.all(query, [bracketId], callback);

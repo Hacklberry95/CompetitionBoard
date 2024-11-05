@@ -160,6 +160,7 @@ const ViewBracketTab = ({ selectedTournament }) => {
         open={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}
         onConfirm={handleDeleteBrackets}
+        message={`Are you sure you want to delete all the matches of "${selectedTournament}"?`}
       />
     </div>
   );

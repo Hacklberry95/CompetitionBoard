@@ -106,30 +106,22 @@ router.delete("/brackets/:tournamentId/deleteAll", async (req, res) => {
   const { tournamentId } = req.params;
 
   try {
-    // Ensure there are entries to delete
-    const bracketEntriesCount = await BracketEntries.count(db);
-    if (bracketEntriesCount === 0) {
-      return res
-        .status(404)
-        .json({ message: "No BracketEntries found to delete." });
-    }
-
-    // Delete dependent tables first, then Brackets
     await Promise.all([
-      BracketEntries.deleteAll(db), // Delete entries that reference Brackets
-      Match.deleteAll(db), // Delete matches that reference Brackets
+      BracketEntries.deleteAll(db, tournamentId),
+      Match.deleteAll(db, tournamentId),
     ]);
 
-    // Delete Brackets after the dependent tables have been cleared
-    await Bracket.deleteAll(db);
+    await Bracket.deleteAll(db, tournamentId);
 
     res.status(200).json({
       message:
-        "All matches, brackets, and bracket entries deleted successfully.",
+        "All matches, brackets, and bracket entries for the tournament deleted successfully.",
     });
   } catch (error) {
-    console.error("Error deleting records:", error.message);
-    res.status(500).json({ message: "Error deleting records", error });
+    console.error("Error deleting records:", error);
+    res
+      .status(500)
+      .json({ message: "Error deleting records", error: error.message });
   }
 });
 

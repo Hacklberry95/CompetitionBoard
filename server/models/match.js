@@ -139,9 +139,24 @@ class Matches {
       callback(err);
     });
   }
-  static deleteAll(db, callback) {
-    const query = `DELETE FROM Matches;`;
-    db.all(query, callback);
+  static deleteAll(db, tournamentId) {
+    const query = `
+    DELETE FROM Matches
+    WHERE bracketId IN (
+      SELECT id FROM Brackets WHERE tournamentId = ?
+    );
+  `;
+
+    return new Promise((resolve, reject) => {
+      db.run(query, [tournamentId], function (err) {
+        if (err) {
+          console.error("Error deleting matches:", err.message);
+          return reject(err);
+        }
+        console.log("Matches deleted successfully.");
+        resolve();
+      });
+    });
   }
 
   static findByBracketId(db, bracketId, callback) {

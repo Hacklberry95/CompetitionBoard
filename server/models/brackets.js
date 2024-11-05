@@ -128,24 +128,17 @@ class Brackets {
     db.all(query, [tournamentID], callback);
   }
 
-  static deleteAll(db, callback) {
-    const query = `DELETE FROM Brackets;`;
+  static deleteAll(db, tournamentId) {
+    const query = `DELETE FROM Brackets WHERE tournamentId = ?;`;
 
     return new Promise((resolve, reject) => {
-      db.run(query, function (err) {
+      db.run(query, [tournamentId], function (err) {
         if (err) {
-          console.error("Error deleting all brackets:", err.message);
-          if (callback) callback(err);
+          console.error("Error deleting brackets for tournament:", err.message);
           return reject(err);
         }
-
-        console.log("All brackets deleted successfully.");
-
-        if (callback) {
-          callback(null); // Invoke the callback with no error if provided
-        } else {
-          resolve(); // Resolve the promise if no callback is provided
-        }
+        console.log("Brackets for tournament deleted successfully.");
+        resolve();
       });
     });
   }
