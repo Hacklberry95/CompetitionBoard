@@ -15,7 +15,6 @@ const matchAPI = {
   getMatchesByTournamentId: async (tournamentId) => {
     try {
       const response = await axios.get(`${API_URL}/${tournamentId}`);
-      console.log("API response for match:", response.data);
       return response.data;
     } catch (error) {
       throw error.response.data;
@@ -24,7 +23,6 @@ const matchAPI = {
   getMatchesByBracketId: async (bracketId) => {
     try {
       const response = await axios.get(`${API_URL}/${bracketId}`);
-      console.log("API response for match:", response.data);
       return response.data;
     } catch (error) {
       throw error.response.data;

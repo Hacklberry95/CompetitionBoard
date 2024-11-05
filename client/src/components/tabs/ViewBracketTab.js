@@ -33,18 +33,9 @@ const ViewBracketTab = ({ selectedTournament }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   useEffect(() => {
-    console.log("Updated brackets:", brackets);
-  }, [brackets]);
-
-  useEffect(() => {
     const fetchBrackets = async () => {
       if (selectedTournament) {
-        dispatch(fetchBracketsByTournamentId(selectedTournament));
-        if (brackets.length > 0) {
-          setSelectedBracket(brackets[0].id);
-        } else {
-          setSelectedBracket(null); // Clear selection if no brackets
-        }
+        await dispatch(fetchBracketsByTournamentId(selectedTournament));
       } else {
         dispatch(clearBrackets());
         setSelectedBracket(null);
@@ -53,6 +44,14 @@ const ViewBracketTab = ({ selectedTournament }) => {
 
     fetchBrackets();
   }, [selectedTournament, dispatch]);
+
+  useEffect(() => {
+    if (brackets.length > 0) {
+      setSelectedBracket(brackets[0].id);
+    } else {
+      setSelectedBracket(null);
+    }
+  }, [brackets]);
 
   useEffect(() => {
     const fetchMatchesAndContestants = async () => {

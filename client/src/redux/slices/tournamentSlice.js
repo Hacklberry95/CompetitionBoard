@@ -7,7 +7,7 @@ export const fetchAllTournaments = createAsyncThunk(
   "tournaments/fetchAllTournaments",
   async () => {
     const response = await tournamentAPI.getAllTournaments();
-    return response; // Return only data here
+    return response;
   }
 );
 
@@ -15,7 +15,7 @@ export const fetchTournamentById = createAsyncThunk(
   "tournaments/fetchTournamentById",
   async (id) => {
     const response = await tournamentAPI.getTournamentById(id);
-    return response; // Ensure only the data is returned
+    return response;
   }
 );
 
@@ -23,7 +23,7 @@ export const createTournament = createAsyncThunk(
   "tournaments/createTournament",
   async (tournamentData) => {
     const response = await tournamentAPI.createTournament(tournamentData);
-    return response; // Return data only
+    return response;
   }
 );
 
@@ -31,7 +31,7 @@ export const updateTournament = createAsyncThunk(
   "tournaments/updateTournament",
   async ({ id, tournamentData }) => {
     const response = await tournamentAPI.updateTournament(id, tournamentData);
-    return response.data; // Return data only
+    return response.data;
   }
 );
 
@@ -40,17 +40,6 @@ export const deleteTournament = createAsyncThunk(
   async (id) => {
     await tournamentAPI.deleteTournament(id);
     return id; // Return only the ID of the deleted tournament
-  }
-);
-
-export const addContestantToTournament = createAsyncThunk(
-  "tournaments/addContestantToTournament",
-  async ({ tournamentId, contestantData }) => {
-    const response = await tournamentAPI.addContestantToTournament(
-      tournamentId,
-      contestantData
-    );
-    return response.data; // Return data only
   }
 );
 
@@ -98,11 +87,6 @@ const tournamentSlice = createSlice({
         state.tournaments = state.tournaments.filter(
           (t) => t.id !== action.payload
         );
-      })
-      .addCase(addContestantToTournament.fulfilled, (state, action) => {
-        if (state.selectedTournament) {
-          state.selectedTournament.contestants.push(action.payload);
-        }
       });
   },
 });
