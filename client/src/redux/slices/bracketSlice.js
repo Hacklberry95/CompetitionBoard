@@ -38,12 +38,16 @@ const bracketSlice = createSlice({
   name: "brackets",
   initialState: {
     brackets: [],
+    selectedBracket: null,
     loading: false,
     error: null,
   },
   reducers: {
     clearBrackets: (state) => {
       state.brackets = [];
+    },
+    setSelectedBracket: (state, action) => {
+      state.selectedBracket = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -89,5 +93,5 @@ const bracketSlice = createSlice({
   },
 });
 
-export const { clearBrackets } = bracketSlice.actions;
+export const { clearBrackets, setSelectedBracket } = bracketSlice.actions;
 export default bracketSlice.reducer;

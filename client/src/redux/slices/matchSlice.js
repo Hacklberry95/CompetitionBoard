@@ -1,21 +1,28 @@
-// src/redux/slices/matchSlice.js
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import matchAPI from "../../api/matchAPI";
 
-// Existing action to fetch matches by tournament ID
-export const fetchMatchesByTournamentId = createAsyncThunk(
-  "matches/fetchByTournamentId",
-  async (tournamentId, { rejectWithValue }) => {
+export const declareWinner = createAsyncThunk(
+  "matches/declareWinner",
+  async (
+    { matchId, winnerId, loserId, isLosersBracket, bracketId, roundNumber },
+    { rejectWithValue }
+  ) => {
     try {
-      const response = await matchAPI.getMatchesByTournamentId(tournamentId);
+      const response = await matchAPI.declareWinner({
+        matchId,
+        winnerId,
+        loserId,
+        isLosersBracket,
+        bracketId,
+        roundNumber,
+      });
       return response;
     } catch (error) {
-      return rejectWithValue("Failed to fetch matches.");
+      return rejectWithValue("Failed to declare a winner.");
     }
   }
 );
 
-// New action to fetch matches by bracket ID
 export const fetchMatchesByBracketId = createAsyncThunk(
   "matches/fetchByBracketId",
   async (bracketId, { rejectWithValue }) => {
@@ -33,6 +40,7 @@ const matchSlice = createSlice({
   initialState: {
     matches: [],
     loading: false,
+    loadingUpdate: false, // New loading state specifically for updates
     error: null,
   },
   reducers: {
@@ -42,17 +50,6 @@ const matchSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchMatchesByTournamentId.pending, (state) => {
-        state.loading = true;
-      })
-      .addCase(fetchMatchesByTournamentId.fulfilled, (state, action) => {
-        state.loading = false;
-        state.matches = action.payload;
-      })
-      .addCase(fetchMatchesByTournamentId.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      })
       .addCase(fetchMatchesByBracketId.pending, (state) => {
         state.loading = true;
       })
@@ -62,6 +59,16 @@ const matchSlice = createSlice({
       })
       .addCase(fetchMatchesByBracketId.rejected, (state, action) => {
         state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(declareWinner.pending, (state) => {
+        state.loadingUpdate = true;
+      })
+      .addCase(declareWinner.fulfilled, (state, action) => {
+        state.loadingUpdate = false;
+      })
+      .addCase(declareWinner.rejected, (state, action) => {
+        state.loadingUpdate = false;
         state.error = action.payload;
       });
   },

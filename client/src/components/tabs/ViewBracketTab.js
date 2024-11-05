@@ -9,6 +9,7 @@ import {
   clearBrackets,
   generateBracketsForTournament,
   fetchBracketsByTournamentId,
+  setSelectedBracket,
 } from "../../redux/slices/bracketSlice";
 import {
   fetchMatchesByBracketId,
@@ -28,8 +29,9 @@ const ViewBracketTab = ({ selectedTournament }) => {
   const error = useSelector(
     (state) => state.brackets.error || state.matches.error
   );
-
-  const [selectedBracket, setSelectedBracket] = useState(null);
+  const selectedBracket = useSelector(
+    (state) => state.brackets.selectedBracket
+  );
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   useEffect(() => {
@@ -38,7 +40,7 @@ const ViewBracketTab = ({ selectedTournament }) => {
         await dispatch(fetchBracketsByTournamentId(selectedTournament));
       } else {
         dispatch(clearBrackets());
-        setSelectedBracket(null);
+        dispatch(setSelectedBracket(null)); // Reset selectedBracket in Redux
       }
     };
 
@@ -47,11 +49,11 @@ const ViewBracketTab = ({ selectedTournament }) => {
 
   useEffect(() => {
     if (brackets.length > 0) {
-      setSelectedBracket(brackets[0].id);
+      dispatch(setSelectedBracket(brackets[0].id)); // Set first bracket as default in Redux
     } else {
-      setSelectedBracket(null);
+      dispatch(setSelectedBracket(null));
     }
-  }, [brackets]);
+  }, [brackets, dispatch]);
 
   useEffect(() => {
     const fetchMatchesAndContestants = async () => {
@@ -82,7 +84,7 @@ const ViewBracketTab = ({ selectedTournament }) => {
         fetchBracketsByTournamentId(selectedTournament)
       );
       if (newBracketId.payload.length > 0) {
-        setSelectedBracket(newBracketId.payload[0].id);
+        dispatch(setSelectedBracket(newBracketId.payload[0].id)); // Set newly generated bracket as selected
       }
       showSnackbar(
         response.payload.message || "Brackets generated successfully!",
@@ -101,7 +103,7 @@ const ViewBracketTab = ({ selectedTournament }) => {
 
     if (deleteAllBrackets.fulfilled.match(response)) {
       await dispatch(fetchBracketsByTournamentId(selectedTournament));
-      setSelectedBracket(null);
+      dispatch(setSelectedBracket(null)); // Clear selected bracket in Redux
       setIsDialogOpen(false);
       showSnackbar(
         response.payload.message || "Brackets deleted successfully!",
@@ -124,7 +126,7 @@ const ViewBracketTab = ({ selectedTournament }) => {
             <select
               id="bracket-select"
               value={selectedBracket || ""}
-              onChange={(e) => setSelectedBracket(e.target.value)}
+              onChange={(e) => dispatch(setSelectedBracket(e.target.value))}
             >
               {brackets.map((bracket) => (
                 <option key={bracket.id} value={bracket.id}>

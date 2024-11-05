@@ -223,6 +223,7 @@ class Matches {
     contestantId,
     isLosersBracket
   ) {
+    // Step 1: Find an existing match with an open slot
     const existingMatch = await Matches.findAvailableMatch(
       db,
       bracketId,
@@ -231,7 +232,7 @@ class Matches {
     );
 
     if (existingMatch) {
-      // Place the contestant in the available slot of the found match
+      // Place the contestant in the open slot of the existing match
       const participantField = existingMatch.Participant1Id
         ? "Participant2Id"
         : "Participant1Id";
@@ -243,15 +244,38 @@ class Matches {
         });
       });
     } else {
-      // No available match, create a new one
-      const query = `
-      INSERT INTO Matches (BracketId, RoundNumber, Participant1Id, isLosersBracket)
-      VALUES (?, ?, ?, ?);
+      // Step 2: Find the next MatchNumber for the round
+      const nextMatchNumberQuery = `
+      SELECT COALESCE(MAX(MatchNumber), 0) + 1 AS NextMatchNumber 
+      FROM Matches 
+      WHERE BracketId = ? AND RoundNumber = ? AND isLosersBracket = ?;
+    `;
+      const nextMatchNumber = await new Promise((resolve, reject) => {
+        db.get(
+          nextMatchNumberQuery,
+          [bracketId, roundNumber, isLosersBracket],
+          (err, row) => {
+            if (err) reject(err);
+            else resolve(row.NextMatchNumber);
+          }
+        );
+      });
+
+      // Step 3: Create a new match with the calculated MatchNumber
+      const insertQuery = `
+      INSERT INTO Matches (BracketId, RoundNumber, MatchNumber, Participant1Id, isLosersBracket)
+      VALUES (?, ?, ?, ?, ?);
     `;
       return new Promise((resolve, reject) => {
         db.run(
-          query,
-          [bracketId, roundNumber, contestantId, isLosersBracket],
+          insertQuery,
+          [
+            bracketId,
+            roundNumber,
+            nextMatchNumber,
+            contestantId,
+            isLosersBracket,
+          ],
           function (err) {
             if (err) reject(err);
             else resolve();

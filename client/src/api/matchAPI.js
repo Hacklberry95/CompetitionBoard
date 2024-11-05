@@ -45,6 +45,29 @@ const matchAPI = {
       throw error.response.data;
     }
   },
+  declareWinner: async ({
+    matchId,
+    winnerId,
+    loserId,
+    isLosersBracket,
+    bracketId,
+    roundNumber,
+  }) => {
+    try {
+      const response = await axios.post(`${API_URL}/declare-winner`, {
+        matchId,
+        winnerId,
+        loserId,
+        isLosersBracket,
+        bracketId,
+        roundNumber,
+      });
+      console.log(response.data);
+      return response.data;
+    } catch (error) {
+      throw error.response.data;
+    }
+  },
 };
 
 export default matchAPI;
