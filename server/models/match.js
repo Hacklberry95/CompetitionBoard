@@ -86,17 +86,17 @@ class Matches {
     );
   }
 
-  static findAll(db, callback) {
+  static async findAll(db, callback) {
     const query = `SELECT * FROM Matches;`;
-    db.all(query, [], callback);
+    await db.all(query, [], callback);
   }
 
-  static findById(db, id, callback) {
+  static async findById(db, id, callback) {
     const query = `SELECT * FROM Matches WHERE id = ?;`;
-    db.get(query, [id], callback);
+    await db.get(query, [id], callback);
   }
 
-  static update(
+  static async update(
     db,
     id,
     {
@@ -133,13 +133,13 @@ class Matches {
     );
   }
 
-  static delete(db, id, callback) {
+  static async delete(db, id, callback) {
     const query = `DELETE FROM Matches WHERE id = ?;`;
-    db.run(query, [id], function (err) {
+    await db.run(query, [id], function (err) {
       callback(err);
     });
   }
-  static deleteAll(db, tournamentId) {
+  static async deleteAll(db, tournamentId) {
     const query = `
     DELETE FROM Matches
     WHERE bracketId IN (
@@ -159,12 +159,12 @@ class Matches {
     });
   }
 
-  static findByBracketId(db, bracketId, callback) {
+  static async findByBracketId(db, bracketId, callback) {
     const query = `SELECT * FROM Matches WHERE BracketId = ?;`;
-    db.all(query, [bracketId], callback);
+    await db.all(query, [bracketId], callback);
   }
 
-  static findByParticipantId(db, participantId) {
+  static async findByParticipantId(db, participantId) {
     const query = `SELECT * FROM Matches WHERE Participant1Id = ? OR Participant2Id = ?`;
 
     return new Promise((resolve, reject) => {
@@ -180,6 +180,120 @@ class Matches {
         }
       });
     });
+  }
+  // Match winner/loser logic
+
+  static async findAvailableMatch(db, bracketId, roundNumber, isLosersBracket) {
+    const query = `
+    SELECT * FROM Matches 
+    WHERE BracketId = ? AND RoundNumber = ? AND isLosersBracket = ? 
+      AND (Participant1Id IS NULL OR Participant2Id IS NULL)
+    LIMIT 1;
+  `;
+    return new Promise((resolve, reject) => {
+      db.get(query, [bracketId, roundNumber, isLosersBracket], (err, match) => {
+        if (err) {
+          console.error("Error finding available match:", err.message);
+          reject(err);
+        } else {
+          resolve(match); // returns the match with an empty slot, if available
+        }
+      });
+    });
+  }
+  // Function to update a match with a winner and loser
+  static declareWinner(database, matchId, winnerId, loserId) {
+    const query = `UPDATE Matches SET WinnerId = ?, LoserId = ? WHERE id = ?`;
+    return new Promise((resolve, reject) => {
+      database.run(query, [winnerId, loserId, matchId], function (err) {
+        if (err) {
+          console.error("Error in declareWinner:", err.message);
+          reject(err);
+        } else {
+          resolve();
+        }
+      });
+    });
+  }
+
+  static async placeContestantInMatch(
+    db,
+    bracketId,
+    roundNumber,
+    contestantId,
+    isLosersBracket
+  ) {
+    const existingMatch = await Matches.findAvailableMatch(
+      db,
+      bracketId,
+      roundNumber,
+      isLosersBracket
+    );
+
+    if (existingMatch) {
+      // Place the contestant in the available slot of the found match
+      const participantField = existingMatch.Participant1Id
+        ? "Participant2Id"
+        : "Participant1Id";
+      const query = `UPDATE Matches SET ${participantField} = ? WHERE id = ?`;
+      return new Promise((resolve, reject) => {
+        db.run(query, [contestantId, existingMatch.id], function (err) {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+    } else {
+      // No available match, create a new one
+      const query = `
+      INSERT INTO Matches (BracketId, RoundNumber, Participant1Id, isLosersBracket)
+      VALUES (?, ?, ?, ?);
+    `;
+      return new Promise((resolve, reject) => {
+        db.run(
+          query,
+          [bracketId, roundNumber, contestantId, isLosersBracket],
+          function (err) {
+            if (err) reject(err);
+            else resolve();
+          }
+        );
+      });
+    }
+  }
+
+  static async handleMatchResult(
+    db,
+    matchId,
+    winnerId,
+    loserId,
+    isLosersBracket,
+    bracketId,
+    roundNumber
+  ) {
+    // Update the completed match
+    await Matches.declareWinner(db, matchId, winnerId, loserId);
+
+    if (!isLosersBracket) {
+      // Winner continues in winners' bracket
+      await Matches.placeContestantInMatch(
+        db,
+        bracketId,
+        roundNumber + 1,
+        winnerId,
+        false
+      );
+
+      // Loser moves to the losers' bracket
+      await Matches.placeContestantInMatch(
+        db,
+        bracketId,
+        roundNumber,
+        loserId,
+        true
+      );
+    } else {
+      console.log(`Contestant ${loserId} is eliminated from the tournament.`);
+    }
   }
 }
 

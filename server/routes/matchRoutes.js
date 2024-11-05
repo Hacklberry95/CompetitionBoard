@@ -3,9 +3,7 @@ const express = require("express");
 const router = express.Router();
 const Matches = require("../models/match");
 const path = require("path");
-
-const dbPath = path.join(__dirname, "../../db/tournament.db");
-const db = new (require("sqlite3").verbose().Database)(dbPath);
+const db = require("../db");
 
 // Create a new match
 router.post("/matches", (req, res) => {
@@ -40,22 +38,31 @@ router.post("/matches", (req, res) => {
 });
 
 // Declare a winner of the match
-router.put("/matches/:id/winner", (req, res) => {
-  const matchId = req.params.id;
-  const { winnerId } = req.body;
+router.post("/matches/declare-winner", async (req, res) => {
+  const {
+    matchId,
+    winnerId,
+    loserId,
+    isLosersBracket,
+    bracketId,
+    roundNumber,
+  } = req.body;
 
-  if (!winnerId) {
-    return res.status(400).json({ message: "Winner ID is required." });
+  try {
+    await Matches.handleMatchResult(
+      db,
+      matchId,
+      winnerId,
+      loserId,
+      isLosersBracket,
+      bracketId,
+      roundNumber
+    );
+    res.status(200).json({ message: "Match result updated successfully." });
+  } catch (error) {
+    console.error("Error updating match result:", error);
+    res.status(500).json({ message: "Failed to update match result." });
   }
-
-  Matches.update(db, matchId, { winnerId }, (err) => {
-    if (err) {
-      return res
-        .status(500)
-        .json({ message: "Error updating match", error: err });
-    }
-    return res.json({ message: "Winner declared successfully!" });
-  });
 });
 
 // Get all matches for a specific bracket

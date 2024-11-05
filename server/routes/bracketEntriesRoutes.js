@@ -3,9 +3,7 @@ const express = require("express");
 const router = express.Router();
 const BracketEntry = require("../models/bracketEntries");
 const path = require("path");
-
-const dbPath = path.join(__dirname, "../../db/tournament.db");
-const db = new (require("sqlite3").verbose().Database)(dbPath);
+const db = require("../db");
 
 // Get all bracket entries
 router.get("/bracketEntries", (req, res) => {
@@ -155,6 +153,5 @@ router.get("/bracketEntries/participant/:participantId", (req, res) => {
     return res.json(entries);
   });
 });
-
 
 module.exports = router;

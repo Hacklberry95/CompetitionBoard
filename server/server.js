@@ -1,10 +1,12 @@
+// server.js
 const express = require("express");
 const cors = require("cors");
-const sqlite3 = require("sqlite3").verbose();
-const app = express();
-const http = require("http");
 const path = require("path");
+const app = express();
 const port = 5000;
+
+// Import the shared db instance from db.js
+const db = require("./db");
 
 // Importing Models
 const Tournament = require("./models/tournament");
@@ -17,29 +19,23 @@ const BracketEntries = require("./models/bracketEntries");
 app.use(cors());
 app.use(express.json());
 
-const dbPath = path.join(__dirname, "../db/tournament.db");
-const db = new sqlite3.Database(dbPath, (err) => {
-  if (err) {
-    console.error("Error opening database:", err.message);
+// Enable foreign keys and create tables
+db.run("PRAGMA foreign_keys = ON", (pragmaErr) => {
+  if (pragmaErr) {
+    console.error("Error enabling foreign keys:", pragmaErr.message);
   } else {
-    console.log("Connected to the tournament database.");
+    console.log("Foreign keys are enabled.");
 
-    db.run("PRAGMA foreign_keys = ON", (pragmaErr) => {
-      if (pragmaErr) {
-        console.error("Error enabling foreign keys:", pragmaErr.message);
-      } else {
-        console.log("Foreign keys are enabled.");
-
-        Tournament.createTable(db);
-        Match.createTable(db);
-        Contestant.createTable(db);
-        Brackets.createTable(db);
-        BracketEntries.createTable(db);
-      }
-    });
+    // Create tables using the shared db instance
+    Tournament.createTable(db);
+    Match.createTable(db);
+    Contestant.createTable(db);
+    Brackets.createTable(db);
+    BracketEntries.createTable(db);
   }
 });
 
+// Import and use routes
 const bracketEntries = require("./routes/bracketEntriesRoutes");
 const brackets = require("./routes/bracketsRoutes");
 const tournamentRoutes = require("./routes/tournamentRoutes");
@@ -52,10 +48,12 @@ app.use("/api", matchRoutes);
 app.use("/api", brackets);
 app.use("/api", bracketEntries);
 
+// Start the server
 const server = app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
 
+// Graceful shutdown
 const shutdown = () => {
   console.log("Shutting down the server...");
 
