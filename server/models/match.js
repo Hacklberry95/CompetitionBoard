@@ -181,27 +181,28 @@ class Matches {
       });
     });
   }
-  // Match winner/loser logic
+  // <==================================================== Match winner/loser logic ====================================================>
 
   static async findAvailableMatch(db, bracketId, roundNumber, isLosersBracket) {
     const query = `
-    SELECT * FROM Matches 
-    WHERE BracketId = ? AND RoundNumber = ? AND isLosersBracket = ? 
-      AND (Participant1Id IS NULL OR Participant2Id IS NULL)
-    LIMIT 1;
-  `;
+      SELECT * FROM Matches 
+      WHERE BracketId = ? AND RoundNumber = ? AND isLosersBracket = ? 
+        AND (Participant1Id IS NULL OR Participant2Id IS NULL)
+      LIMIT 1;
+    `;
     return new Promise((resolve, reject) => {
       db.get(query, [bracketId, roundNumber, isLosersBracket], (err, match) => {
         if (err) {
           console.error("Error finding available match:", err.message);
           reject(err);
         } else {
-          resolve(match); // returns the match with an empty slot, if available
+          resolve(match);
         }
       });
     });
   }
-  // Function to update a match with a winner and loser
+
+  // Update a match with a winner and a loser
   static declareWinner(database, matchId, winnerId, loserId) {
     const query = `UPDATE Matches SET WinnerId = ?, LoserId = ? WHERE id = ?`;
     return new Promise((resolve, reject) => {
@@ -216,6 +217,54 @@ class Matches {
     });
   }
 
+  // Handle match result and move contestants to the appropriate bracket
+  static async handleMatchResult(
+    db,
+    matchId,
+    winnerId,
+    loserId,
+    isLosersBracket,
+    bracketId,
+    roundNumber
+  ) {
+    await Matches.declareWinner(db, matchId, winnerId, loserId);
+
+    if (!isLosersBracket) {
+      // Winners' Bracket: winner goes to next Winners' round, loser drops to Losers' Bracket
+      await Matches.placeContestantInMatch(
+        db,
+        bracketId,
+        roundNumber + 1,
+        winnerId,
+        false
+      );
+      const targetLosersRound = roundNumber === 0 ? 0 : roundNumber * 2 - 1;
+      await Matches.placeContestantInMatch(
+        db,
+        bracketId,
+        targetLosersRound,
+        loserId,
+        true
+      );
+    } else {
+      // Losers' Bracket: winner advances in Losers' bracket, loser is eliminated
+      await Matches.placeContestantInMatch(
+        db,
+        bracketId,
+        roundNumber + 1,
+        winnerId,
+        true
+      );
+      console.log(
+        `Losers' bracket: ${loserId} is eliminated if they lose again.`
+      );
+    }
+
+    // Check if we should create a final match between the last winners of both brackets
+    await Matches.checkAndCreateFinalMatch(db, bracketId);
+  }
+
+  // Place contestant in the next appropriate match slot
   static async placeContestantInMatch(
     db,
     bracketId,
@@ -223,16 +272,13 @@ class Matches {
     contestantId,
     isLosersBracket
   ) {
-    // Step 1: Find an existing match with an open slot
     const existingMatch = await Matches.findAvailableMatch(
       db,
       bracketId,
       roundNumber,
       isLosersBracket
     );
-
     if (existingMatch) {
-      // Place the contestant in the open slot of the existing match
       const participantField = existingMatch.Participant1Id
         ? "Participant2Id"
         : "Participant1Id";
@@ -244,12 +290,12 @@ class Matches {
         });
       });
     } else {
-      // Step 2: Find the next MatchNumber for the round
+      // Create a new match if no available slot is found
       const nextMatchNumberQuery = `
-      SELECT COALESCE(MAX(MatchNumber), 0) + 1 AS NextMatchNumber 
-      FROM Matches 
-      WHERE BracketId = ? AND RoundNumber = ? AND isLosersBracket = ?;
-    `;
+        SELECT COALESCE(MAX(MatchNumber), 0) + 1 AS NextMatchNumber 
+        FROM Matches 
+        WHERE BracketId = ? AND RoundNumber = ? AND isLosersBracket = ?;
+      `;
       const nextMatchNumber = await new Promise((resolve, reject) => {
         db.get(
           nextMatchNumberQuery,
@@ -261,11 +307,10 @@ class Matches {
         );
       });
 
-      // Step 3: Create a new match with the calculated MatchNumber
       const insertQuery = `
-      INSERT INTO Matches (BracketId, RoundNumber, MatchNumber, Participant1Id, isLosersBracket)
-      VALUES (?, ?, ?, ?, ?);
-    `;
+        INSERT INTO Matches (BracketId, RoundNumber, MatchNumber, Participant1Id, isLosersBracket)
+        VALUES (?, ?, ?, ?, ?);
+      `;
       return new Promise((resolve, reject) => {
         db.run(
           insertQuery,
@@ -285,39 +330,84 @@ class Matches {
     }
   }
 
-  static async handleMatchResult(
-    db,
-    matchId,
-    winnerId,
-    loserId,
-    isLosersBracket,
-    bracketId,
-    roundNumber
-  ) {
-    // Update the completed match
-    await Matches.declareWinner(db, matchId, winnerId, loserId);
+  static async checkAndCreateFinalMatch(db, bracketId) {
+    // Fetch the last winners from both brackets
+    const winnersChampion = await Matches.findLastWinner(db, bracketId, false);
+    const losersChampion = await Matches.findLastWinner(db, bracketId, true);
 
-    if (!isLosersBracket) {
-      // Winner continues in winners' bracket
-      await Matches.placeContestantInMatch(
-        db,
-        bracketId,
-        roundNumber + 1,
-        winnerId,
-        false
-      );
+    // Ensure both champions are identified and have a valid WinnerId
+    if (winnersChampion?.WinnerId && losersChampion?.WinnerId) {
+      // Check if a final match already exists to prevent duplicate creation
+      const existingFinalMatch = await Matches.findFinalMatch(db, bracketId);
 
-      // Loser moves to the losers' bracket
-      await Matches.placeContestantInMatch(
-        db,
-        bracketId,
-        roundNumber,
-        loserId,
-        true
-      );
-    } else {
-      console.log(`Contestant ${loserId} is eliminated from the tournament.`);
+      if (!existingFinalMatch) {
+        // Create the final match with both champions
+        await Matches.createFinalMatch(
+          db,
+          bracketId,
+          winnersChampion.WinnerId,
+          losersChampion.WinnerId
+        );
+        console.log(
+          "Final match created between winners' and losers' champions."
+        );
+        return true; // Indicate that the final match was successfully created
+      }
     }
+    console.log(
+      "One or both champions are missing. Final match will not be created yet."
+    );
+    return false;
+  }
+
+  static async findLastWinner(db, bracketId, isLosersBracket) {
+    const query = `
+      SELECT * FROM Matches 
+      WHERE BracketId = ? AND isLosersBracket = ? 
+      ORDER BY RoundNumber DESC, MatchNumber DESC 
+      LIMIT 1;
+    `;
+    return new Promise((resolve, reject) => {
+      db.get(query, [bracketId, isLosersBracket], (err, match) => {
+        if (err) reject(err);
+        else resolve(match);
+      });
+    });
+  }
+
+  static async findFinalMatch(db, bracketId) {
+    const query = `
+      SELECT * FROM Matches 
+      WHERE BracketId = ? AND RoundNumber = 'Final';
+    `;
+    return new Promise((resolve, reject) => {
+      db.get(query, [bracketId], (err, match) => {
+        if (err) reject(err);
+        else resolve(match);
+      });
+    });
+  }
+
+  static async createFinalMatch(
+    db,
+    bracketId,
+    winnersChampionId,
+    losersChampionId
+  ) {
+    const insertQuery = `
+      INSERT INTO Matches (BracketId, RoundNumber, MatchNumber, Participant1Id, Participant2Id)
+      VALUES (?, 'Final', 1, ?, ?)
+    `;
+    return new Promise((resolve, reject) => {
+      db.run(
+        insertQuery,
+        [bracketId, winnersChampionId, losersChampionId],
+        (err) => {
+          if (err) reject(err);
+          else resolve();
+        }
+      );
+    });
   }
 }
 

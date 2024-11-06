@@ -1,5 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { Bracket, Seed, SeedItem, SeedTeam } from "react-brackets";
+import {
+  Bracket,
+  Seed,
+  SingleLineSeed,
+  SeedItem,
+  SeedTeam,
+} from "react-brackets";
 import { useDispatch, useSelector } from "react-redux";
 import {
   declareWinner,
@@ -11,6 +17,7 @@ const BracketVisualizer = ({ matches, contestantsMap }) => {
   const [winnersRounds, setWinnersRounds] = useState([]);
   const [losersRounds, setLosersRounds] = useState([]);
   const [localMatches, setLocalMatches] = useState(matches);
+  const [finalMatchCreated, setFinalMatchCreated] = useState(false);
   const dispatch = useDispatch();
   const selectedBracket = useSelector(
     (state) => state.brackets.selectedBracket
@@ -27,6 +34,12 @@ const BracketVisualizer = ({ matches, contestantsMap }) => {
   }, [matches]);
 
   useEffect(() => {
+    if (finalMatchCreated) {
+      dispatch(fetchMatchesByBracketId(selectedBracket));
+    }
+  }, [finalMatchCreated, selectedBracket, dispatch]);
+
+  useEffect(() => {
     if (!localMatches || !Array.isArray(localMatches)) {
       console.error("Matches data is undefined or not an array.");
       return;
@@ -34,24 +47,51 @@ const BracketVisualizer = ({ matches, contestantsMap }) => {
 
     const organizeRounds = (matchesArray) => {
       const organizedRounds = [];
-      matchesArray.forEach((match) => {
-        const roundIndex = match.RoundNumber || 0;
-        if (!organizedRounds[roundIndex]) {
-          organizedRounds[roundIndex] = {
-            title: `Round ${roundIndex + 1}`,
-            seeds: [],
-          };
-        }
+      let finalMatch = null;
 
-        organizedRounds[roundIndex].seeds.push({
-          id: match.id,
-          teams: [
-            { name: contestantsMap[match.Participant1Id] || "NO TEAM" },
-            { name: contestantsMap[match.Participant2Id] || "NO TEAM" },
-          ],
-          match,
-        });
+      matchesArray.forEach((match) => {
+        if (match.RoundNumber === "Final") {
+          // Identify the final match
+          finalMatch = {
+            id: match.id,
+            title: "Final",
+            seeds: [
+              {
+                id: match.id,
+                teams: [
+                  { name: contestantsMap[match.Participant1Id] || "NO TEAM" },
+                  { name: contestantsMap[match.Participant2Id] || "NO TEAM" },
+                ],
+                match,
+              },
+            ],
+          };
+        } else {
+          // Standard rounds for winners and losers
+          const roundIndex = match.RoundNumber || 0;
+          if (!organizedRounds[roundIndex]) {
+            organizedRounds[roundIndex] = {
+              title: `Round ${roundIndex + 1}`,
+              seeds: [],
+            };
+          }
+
+          organizedRounds[roundIndex].seeds.push({
+            id: match.id,
+            teams: [
+              { name: contestantsMap[match.Participant1Id] || "NO TEAM" },
+              { name: contestantsMap[match.Participant2Id] || "NO TEAM" },
+            ],
+            match,
+          });
+        }
       });
+
+      // Append the final match as the last round in the Winners' Bracket
+      if (finalMatch) {
+        organizedRounds.push(finalMatch);
+      }
+
       return organizedRounds;
     };
 
@@ -74,7 +114,7 @@ const BracketVisualizer = ({ matches, contestantsMap }) => {
         )
       );
 
-      await dispatch(
+      const response = await dispatch(
         declareWinner({
           matchId: id,
           winnerId,
@@ -87,9 +127,12 @@ const BracketVisualizer = ({ matches, contestantsMap }) => {
 
       if (selectedBracket) {
         dispatch(fetchMatchesByBracketId(selectedBracket));
-      } else {
-        console.warn(
-          "selectedBracket is undefined; cannot fetch matches by bracket ID."
+      }
+
+      if (response.payload?.finalMatchCreated) {
+        setFinalMatchCreated(true);
+        alert(
+          "Final championship match created between winners' and losers' champions!"
         );
       }
     } catch (error) {
@@ -97,13 +140,19 @@ const BracketVisualizer = ({ matches, contestantsMap }) => {
     }
   };
 
-  const CustomSeed = ({ seed, breakpoint }) => {
+  const CustomSeed = ({ seed, breakpoint, roundIndex, seedIndex }) => {
     const { match } = seed;
     const participant1Name = contestantsMap[match.Participant1Id] || "NO TEAM";
     const participant2Name = contestantsMap[match.Participant2Id] || "NO TEAM";
 
+    // Check if this round has the same number of seeds as the next round
+    const isLineConnector =
+      losersRounds[roundIndex]?.seeds.length ===
+      losersRounds[roundIndex + 1]?.seeds.length;
+    const Wrapper = isLineConnector ? SingleLineSeed : Seed;
+
     return (
-      <Seed mobileBreakpoint={breakpoint} style={{ fontSize: 12 }}>
+      <Wrapper mobileBreakpoint={breakpoint} style={{ fontSize: 12 }}>
         <SeedItem>
           <div className="team-container">
             <SeedTeam style={{ display: "flex", alignItems: "center" }}>
@@ -134,7 +183,7 @@ const BracketVisualizer = ({ matches, contestantsMap }) => {
             </SeedTeam>
           </div>
         </SeedItem>
-      </Seed>
+      </Wrapper>
     );
   };
 
@@ -145,6 +194,12 @@ const BracketVisualizer = ({ matches, contestantsMap }) => {
 
       <h3>Losers' Bracket</h3>
       <Bracket rounds={losersRounds} renderSeedComponent={CustomSeed} />
+
+      {finalMatchCreated && (
+        <div className="champion-banner">
+          <h2>Final Match! Determine the Champion!</h2>
+        </div>
+      )}
     </div>
   );
 };
