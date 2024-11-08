@@ -1,4 +1,3 @@
-// models/Matches.js
 class Matches {
   static createTable(db) {
     const query = `
@@ -11,6 +10,7 @@ class Matches {
         Participant2Id INTEGER,
         WinnerId INTEGER,
         LoserId INTEGER,
+        isLosersBracket BOOLEAN,
         FOREIGN KEY (BracketId) REFERENCES Brackets(id),
         FOREIGN KEY (Participant1Id) REFERENCES Contestants(id),
         FOREIGN KEY (Participant2Id) REFERENCES Contestants(id),
@@ -62,10 +62,389 @@ class Matches {
         this.loserId,
       ],
       function (err) {
-        callback(err, this.lastId);
+        callback(err, this.lastID);
       }
     );
   }
+
+  static async declareWinner(db, matchId, winnerId, loserId) {
+    const query = `UPDATE Matches SET WinnerId = ?, LoserId = ? WHERE id = ?`;
+    return new Promise((resolve, reject) => {
+      db.run(query, [winnerId, loserId, matchId], function (err) {
+        if (err) {
+          console.error("Error in declareWinner:", err.message);
+          reject(err);
+        } else {
+          console.log(
+            `Winner declared for match ${matchId}: WinnerId = ${winnerId}, LoserId = ${loserId}`
+          );
+          resolve();
+        }
+      });
+    });
+  }
+
+  static async handleMatchResult(
+    db,
+    matchId,
+    winnerId,
+    loserId,
+    isLosersBracket,
+    bracketId,
+    roundNumber
+  ) {
+    console.log(
+      `Handling result for match ${matchId}: Winner = ${winnerId}, Loser = ${loserId}, Round = ${roundNumber}, isLosersBracket = ${isLosersBracket}`
+    );
+    await Matches.declareWinner(db, matchId, winnerId, loserId);
+
+    if (!isLosersBracket) {
+      const nextWinnersRound = roundNumber + 1;
+      console.log(
+        `Placing winner ${winnerId} in next winners round ${nextWinnersRound}`
+      );
+      await Matches.placeContestantInMatch(
+        db,
+        bracketId,
+        nextWinnersRound,
+        winnerId,
+        false
+      );
+
+      const targetLosersRound = roundNumber === 0 ? 0 : roundNumber * 2 - 1;
+      console.log(
+        `Placing loser ${loserId} in first losers round ${targetLosersRound}`
+      );
+      await Matches.placeContestantInMatch(
+        db,
+        bracketId,
+        targetLosersRound,
+        loserId,
+        true
+      );
+    } else {
+      const nextLosersRound = roundNumber + 1;
+      console.log(
+        `Placing winner ${winnerId} in next losers round ${nextLosersRound}`
+      );
+      await Matches.placeContestantInMatch(
+        db,
+        bracketId,
+        nextLosersRound,
+        winnerId,
+        true
+      );
+    }
+
+    const finalMatchCreated = await Matches.checkAndCreateFinalMatch(
+      db,
+      bracketId
+    );
+    return finalMatchCreated;
+  }
+
+  static async placeContestantInMatch(
+    db,
+    bracketId,
+    roundNumber,
+    contestantId,
+    isLosersBracket
+  ) {
+    console.log(
+      `Placing contestant ${contestantId} in bracket ${bracketId}, round ${roundNumber}, isLosersBracket = ${isLosersBracket}`
+    );
+    const existingMatch = await Matches.findAvailableMatch(
+      db,
+      bracketId,
+      roundNumber,
+      isLosersBracket
+    );
+    if (existingMatch) {
+      const participantField = existingMatch.Participant1Id
+        ? "Participant2Id"
+        : "Participant1Id";
+      const query = `UPDATE Matches SET ${participantField} = ? WHERE id = ?`;
+      return new Promise((resolve, reject) => {
+        db.run(query, [contestantId, existingMatch.id], function (err) {
+          if (err) reject(err);
+          else {
+            console.log(
+              `Contestant ${contestantId} placed in existing match ${existingMatch.id}`
+            );
+            resolve();
+          }
+        });
+      });
+    } else {
+      const query = `
+        INSERT INTO Matches (BracketId, RoundNumber, MatchNumber, Participant1Id, isLosersBracket)
+        VALUES (?, ?, (SELECT IFNULL(MAX(MatchNumber), 0) + 1 FROM Matches WHERE BracketId = ? AND RoundNumber = ?), ?, ?);
+      `;
+      return new Promise((resolve, reject) => {
+        db.run(
+          query,
+          [
+            bracketId,
+            roundNumber,
+            bracketId,
+            roundNumber,
+            contestantId,
+            isLosersBracket,
+          ],
+          function (err) {
+            if (err) reject(err);
+            else {
+              console.log(
+                `New match created for contestant ${contestantId} in round ${roundNumber}`
+              );
+              resolve();
+            }
+          }
+        );
+      });
+    }
+  }
+
+  static async checkAndCreateFinalMatch(db, bracketId) {
+    try {
+      // Check for champions in both brackets
+      const winnersChampionId = await Matches.getChampion(db, bracketId, false);
+      const losersChampionId = await Matches.getChampion(db, bracketId, true);
+
+      console.log("Winners' Bracket Champion ID:", winnersChampionId);
+      console.log("Losers' Bracket Champion ID:", losersChampionId);
+
+      // Get the last round numbers for each bracket
+      const lastWinnersRound = await Matches.getLastRoundNumber(
+        db,
+        bracketId,
+        false
+      );
+      const lastLosersRound = await Matches.getLastRoundNumber(
+        db,
+        bracketId,
+        true
+      );
+
+      // Verify both brackets are at their final match with no future rounds
+      const isWinnersFinalRoundComplete = await Matches.isFinalRound(
+        db,
+        bracketId,
+        lastWinnersRound,
+        false
+      );
+      const isLosersFinalRoundComplete = await Matches.isFinalRound(
+        db,
+        bracketId,
+        lastLosersRound,
+        true
+      );
+
+      // Confirm there are no remaining rounds with unfinished matches in both brackets
+      const noFutureMatchesWinners =
+        !(await Matches.hasUnfinishedMatchesInFutureRounds(
+          db,
+          bracketId,
+          lastWinnersRound,
+          false
+        ));
+      const noFutureMatchesLosers =
+        !(await Matches.hasUnfinishedMatchesInFutureRounds(
+          db,
+          bracketId,
+          lastLosersRound,
+          true
+        ));
+
+      // Ensure we only create the final match if both brackets are completely resolved
+      const fullyCompletedBrackets =
+        isWinnersFinalRoundComplete &&
+        isLosersFinalRoundComplete &&
+        noFutureMatchesWinners &&
+        noFutureMatchesLosers;
+
+      if (winnersChampionId && losersChampionId && fullyCompletedBrackets) {
+        const existingFinalMatch = await Matches.findFinalMatch(db, bracketId);
+        if (!existingFinalMatch) {
+          console.log("Creating final championship match...");
+          await Matches.createFinalMatch(
+            db,
+            bracketId,
+            winnersChampionId,
+            losersChampionId
+          );
+          console.log("Final championship match created successfully.");
+          return true;
+        } else {
+          console.log("Final match already exists.");
+        }
+      } else {
+        console.log(
+          "Waiting for champions in both brackets and full bracket completion before creating the final match."
+        );
+      }
+    } catch (error) {
+      console.error("Error in checkAndCreateFinalMatch:", error.message);
+    }
+    return false;
+  }
+
+  // < ============================== HELPER METHODS ===========================>
+  static async isSingleMatchRound(db, bracketId, roundNumber, isLosersBracket) {
+    const query = `
+    SELECT COUNT(*) as matchCount
+    FROM Matches
+    WHERE BracketId = ? AND RoundNumber = ? AND isLosersBracket = ?;
+  `;
+    return new Promise((resolve, reject) => {
+      db.get(query, [bracketId, roundNumber, isLosersBracket], (err, row) => {
+        if (err) {
+          console.error("Error checking single match round:", err.message);
+          reject(err);
+        } else {
+          resolve(row.matchCount === 1); // Returns true if there's only one match in the round
+        }
+      });
+    });
+  }
+  static async hasUnfinishedMatchesInFutureRounds(
+    db,
+    bracketId,
+    currentRound,
+    isLosersBracket
+  ) {
+    const query = `
+    SELECT COUNT(*) as unfinishedMatches
+    FROM Matches
+    WHERE BracketId = ? AND RoundNumber > ? AND isLosersBracket = ? AND WinnerId IS NULL;
+  `;
+    return new Promise((resolve, reject) => {
+      db.get(query, [bracketId, currentRound, isLosersBracket], (err, row) => {
+        if (err) {
+          console.error(
+            "Error checking unfinished future rounds:",
+            err.message
+          );
+          reject(err);
+        } else {
+          resolve(row.unfinishedMatches > 0); // True if there are unfinished matches in future rounds
+        }
+      });
+    });
+  }
+
+  static async getChampion(db, bracketId, isLosersBracket) {
+    // Adjust this query to fetch only the last match in the bracket with a declared winner
+    const query = `
+    SELECT WinnerId 
+    FROM Matches 
+    WHERE BracketId = ? AND isLosersBracket = ? AND WinnerId IS NOT NULL
+    ORDER BY RoundNumber DESC, MatchNumber DESC 
+    LIMIT 1;
+  `;
+    return new Promise((resolve, reject) => {
+      db.get(query, [bracketId, isLosersBracket], (err, row) => {
+        if (err) {
+          console.error("Error finding champion:", err.message);
+          reject(err);
+        } else {
+          const championId = row?.WinnerId || null;
+          console.log(
+            `${
+              isLosersBracket ? "Losers" : "Winners"
+            } Bracket Champion ID: ${championId}`
+          );
+          resolve(championId);
+        }
+      });
+    });
+  }
+
+  static async getLastRoundNumber(db, bracketId, isLosersBracket) {
+    const query = `
+    SELECT MAX(RoundNumber) as lastRound 
+    FROM Matches 
+    WHERE BracketId = ? AND isLosersBracket = ?;
+  `;
+    return new Promise((resolve, reject) => {
+      db.get(query, [bracketId, isLosersBracket], (err, row) => {
+        if (err) {
+          console.error("Error fetching last round number:", err.message);
+          reject(err);
+        } else {
+          resolve(row.lastRound);
+        }
+      });
+    });
+  }
+
+  static async isFinalRound(db, bracketId, roundNumber, isLosersBracket) {
+    const query = `
+    SELECT COUNT(*) as unfinishedMatches 
+    FROM Matches 
+    WHERE BracketId = ? AND RoundNumber = ? AND isLosersBracket = ? AND WinnerId IS NULL;
+  `;
+    return new Promise((resolve, reject) => {
+      db.get(query, [bracketId, roundNumber, isLosersBracket], (err, row) => {
+        if (err) {
+          console.error("Error checking if round is finalized:", err.message);
+          reject(err);
+        } else {
+          // Round is finalized if no matches are unfinished
+          resolve(row.unfinishedMatches === 0);
+        }
+      });
+    });
+  }
+  static async findAvailableMatch(db, bracketId, roundNumber, isLosersBracket) {
+    const query = `SELECT * FROM Matches WHERE BracketId = ? AND RoundNumber = ? AND isLosersBracket = ? AND (Participant1Id IS NULL OR Participant2Id IS NULL) LIMIT 1;`;
+    return new Promise((resolve, reject) => {
+      db.get(query, [bracketId, roundNumber, isLosersBracket], (err, match) => {
+        if (err) {
+          console.error("Error finding available match:", err.message);
+          reject(err);
+        } else {
+          resolve(match);
+        }
+      });
+    });
+  }
+
+  static async findFinalMatch(db, bracketId) {
+    const finalRoundNumber = 999; // Use the same integer for the final round
+    const query = `SELECT * FROM Matches WHERE BracketId = ? AND RoundNumber = ?`;
+    return new Promise((resolve, reject) => {
+      db.get(query, [bracketId, finalRoundNumber], (err, match) => {
+        if (err) reject(err);
+        else resolve(match);
+      });
+    });
+  }
+
+  static async createFinalMatch(
+    db,
+    bracketId,
+    winnersChampionId,
+    losersChampionId
+  ) {
+    const finalRoundNumber = 999; // Assign a special integer for the final round
+    const query = `
+    INSERT INTO Matches (BracketId, RoundNumber, MatchNumber, Participant1Id, Participant2Id, isLosersBracket)
+    VALUES (?, ?, 1, ?, ?, 0);
+  `;
+    return new Promise((resolve, reject) => {
+      db.run(
+        query,
+        [bracketId, finalRoundNumber, winnersChampionId, losersChampionId],
+        (err) => {
+          if (err) reject(err);
+          else resolve();
+        }
+      );
+    });
+  }
+
+  // Additional methods to support CRUD and other operations
   static create(
     db,
     bracketId,
@@ -139,22 +518,23 @@ class Matches {
       callback(err);
     });
   }
+
   static async deleteAll(db, tournamentId) {
     const query = `
-    DELETE FROM Matches
-    WHERE bracketId IN (
-      SELECT id FROM Brackets WHERE tournamentId = ?
-    );
-  `;
-
+      DELETE FROM Matches
+      WHERE BracketId IN (
+        SELECT id FROM Brackets WHERE tournamentId = ?
+      );
+    `;
     return new Promise((resolve, reject) => {
       db.run(query, [tournamentId], function (err) {
         if (err) {
           console.error("Error deleting matches:", err.message);
-          return reject(err);
+          reject(err);
+        } else {
+          console.log("Matches deleted successfully.");
+          resolve();
         }
-        console.log("Matches deleted successfully.");
-        resolve();
       });
     });
   }
@@ -166,7 +546,6 @@ class Matches {
 
   static async findByParticipantId(db, participantId) {
     const query = `SELECT * FROM Matches WHERE Participant1Id = ? OR Participant2Id = ?`;
-
     return new Promise((resolve, reject) => {
       db.all(query, [participantId, participantId], (err, rows) => {
         if (err) {
@@ -176,237 +555,9 @@ class Matches {
           );
           reject(err);
         } else {
-          resolve(rows || []); // Ensure it returns an empty array if no rows are found
+          resolve(rows || []);
         }
       });
-    });
-  }
-  // <==================================================== Match winner/loser logic ====================================================>
-
-  static async findAvailableMatch(db, bracketId, roundNumber, isLosersBracket) {
-    const query = `
-      SELECT * FROM Matches 
-      WHERE BracketId = ? AND RoundNumber = ? AND isLosersBracket = ? 
-        AND (Participant1Id IS NULL OR Participant2Id IS NULL)
-      LIMIT 1;
-    `;
-    return new Promise((resolve, reject) => {
-      db.get(query, [bracketId, roundNumber, isLosersBracket], (err, match) => {
-        if (err) {
-          console.error("Error finding available match:", err.message);
-          reject(err);
-        } else {
-          resolve(match);
-        }
-      });
-    });
-  }
-
-  // Update a match with a winner and a loser
-  static declareWinner(database, matchId, winnerId, loserId) {
-    const query = `UPDATE Matches SET WinnerId = ?, LoserId = ? WHERE id = ?`;
-    return new Promise((resolve, reject) => {
-      database.run(query, [winnerId, loserId, matchId], function (err) {
-        if (err) {
-          console.error("Error in declareWinner:", err.message);
-          reject(err);
-        } else {
-          resolve();
-        }
-      });
-    });
-  }
-
-  // Handle match result and move contestants to the appropriate bracket
-  static async handleMatchResult(
-    db,
-    matchId,
-    winnerId,
-    loserId,
-    isLosersBracket,
-    bracketId,
-    roundNumber
-  ) {
-    await Matches.declareWinner(db, matchId, winnerId, loserId);
-
-    if (!isLosersBracket) {
-      // Winners' Bracket: winner goes to next Winners' round, loser drops to Losers' Bracket
-      await Matches.placeContestantInMatch(
-        db,
-        bracketId,
-        roundNumber + 1,
-        winnerId,
-        false
-      );
-      const targetLosersRound = roundNumber === 0 ? 0 : roundNumber * 2 - 1;
-      await Matches.placeContestantInMatch(
-        db,
-        bracketId,
-        targetLosersRound,
-        loserId,
-        true
-      );
-    } else {
-      // Losers' Bracket: winner advances in Losers' bracket, loser is eliminated
-      await Matches.placeContestantInMatch(
-        db,
-        bracketId,
-        roundNumber + 1,
-        winnerId,
-        true
-      );
-      console.log(
-        `Losers' bracket: ${loserId} is eliminated if they lose again.`
-      );
-    }
-
-    // Check if we should create a final match between the last winners of both brackets
-    await Matches.checkAndCreateFinalMatch(db, bracketId);
-  }
-
-  // Place contestant in the next appropriate match slot
-  static async placeContestantInMatch(
-    db,
-    bracketId,
-    roundNumber,
-    contestantId,
-    isLosersBracket
-  ) {
-    const existingMatch = await Matches.findAvailableMatch(
-      db,
-      bracketId,
-      roundNumber,
-      isLosersBracket
-    );
-    if (existingMatch) {
-      const participantField = existingMatch.Participant1Id
-        ? "Participant2Id"
-        : "Participant1Id";
-      const query = `UPDATE Matches SET ${participantField} = ? WHERE id = ?`;
-      return new Promise((resolve, reject) => {
-        db.run(query, [contestantId, existingMatch.id], function (err) {
-          if (err) reject(err);
-          else resolve();
-        });
-      });
-    } else {
-      // Create a new match if no available slot is found
-      const nextMatchNumberQuery = `
-        SELECT COALESCE(MAX(MatchNumber), 0) + 1 AS NextMatchNumber 
-        FROM Matches 
-        WHERE BracketId = ? AND RoundNumber = ? AND isLosersBracket = ?;
-      `;
-      const nextMatchNumber = await new Promise((resolve, reject) => {
-        db.get(
-          nextMatchNumberQuery,
-          [bracketId, roundNumber, isLosersBracket],
-          (err, row) => {
-            if (err) reject(err);
-            else resolve(row.NextMatchNumber);
-          }
-        );
-      });
-
-      const insertQuery = `
-        INSERT INTO Matches (BracketId, RoundNumber, MatchNumber, Participant1Id, isLosersBracket)
-        VALUES (?, ?, ?, ?, ?);
-      `;
-      return new Promise((resolve, reject) => {
-        db.run(
-          insertQuery,
-          [
-            bracketId,
-            roundNumber,
-            nextMatchNumber,
-            contestantId,
-            isLosersBracket,
-          ],
-          function (err) {
-            if (err) reject(err);
-            else resolve();
-          }
-        );
-      });
-    }
-  }
-
-  static async checkAndCreateFinalMatch(db, bracketId) {
-    // Fetch the last winners from both brackets
-    const winnersChampion = await Matches.findLastWinner(db, bracketId, false);
-    const losersChampion = await Matches.findLastWinner(db, bracketId, true);
-
-    // Ensure both champions are identified and have a valid WinnerId
-    if (winnersChampion?.WinnerId && losersChampion?.WinnerId) {
-      // Check if a final match already exists to prevent duplicate creation
-      const existingFinalMatch = await Matches.findFinalMatch(db, bracketId);
-
-      if (!existingFinalMatch) {
-        // Create the final match with both champions
-        await Matches.createFinalMatch(
-          db,
-          bracketId,
-          winnersChampion.WinnerId,
-          losersChampion.WinnerId
-        );
-        console.log(
-          "Final match created between winners' and losers' champions."
-        );
-        return true; // Indicate that the final match was successfully created
-      }
-    }
-    console.log(
-      "One or both champions are missing. Final match will not be created yet."
-    );
-    return false;
-  }
-
-  static async findLastWinner(db, bracketId, isLosersBracket) {
-    const query = `
-      SELECT * FROM Matches 
-      WHERE BracketId = ? AND isLosersBracket = ? 
-      ORDER BY RoundNumber DESC, MatchNumber DESC 
-      LIMIT 1;
-    `;
-    return new Promise((resolve, reject) => {
-      db.get(query, [bracketId, isLosersBracket], (err, match) => {
-        if (err) reject(err);
-        else resolve(match);
-      });
-    });
-  }
-
-  static async findFinalMatch(db, bracketId) {
-    const query = `
-      SELECT * FROM Matches 
-      WHERE BracketId = ? AND RoundNumber = 'Final';
-    `;
-    return new Promise((resolve, reject) => {
-      db.get(query, [bracketId], (err, match) => {
-        if (err) reject(err);
-        else resolve(match);
-      });
-    });
-  }
-
-  static async createFinalMatch(
-    db,
-    bracketId,
-    winnersChampionId,
-    losersChampionId
-  ) {
-    const insertQuery = `
-      INSERT INTO Matches (BracketId, RoundNumber, MatchNumber, Participant1Id, Participant2Id)
-      VALUES (?, 'Final', 1, ?, ?)
-    `;
-    return new Promise((resolve, reject) => {
-      db.run(
-        insertQuery,
-        [bracketId, winnersChampionId, losersChampionId],
-        (err) => {
-          if (err) reject(err);
-          else resolve();
-        }
-      );
     });
   }
 }

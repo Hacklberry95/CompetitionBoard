@@ -62,7 +62,7 @@ const matchAPI = {
         bracketId,
         roundNumber,
       });
-      console.log(response.data);
+      console.log(response);
       return response.data;
     } catch (error) {
       throw error.response.data;

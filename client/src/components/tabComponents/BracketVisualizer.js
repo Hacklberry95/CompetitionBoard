@@ -50,10 +50,9 @@ const BracketVisualizer = ({ matches, contestantsMap }) => {
       let finalMatch = null;
 
       matchesArray.forEach((match) => {
-        if (match.RoundNumber === "Final") {
-          // Identify the final match
+        if (match.RoundNumber === 999) {
+          // Use the special integer for the final round
           finalMatch = {
-            id: match.id,
             title: "Final",
             seeds: [
               {
@@ -67,7 +66,6 @@ const BracketVisualizer = ({ matches, contestantsMap }) => {
             ],
           };
         } else {
-          // Standard rounds for winners and losers
           const roundIndex = match.RoundNumber || 0;
           if (!organizedRounds[roundIndex]) {
             organizedRounds[roundIndex] = {
@@ -87,7 +85,7 @@ const BracketVisualizer = ({ matches, contestantsMap }) => {
         }
       });
 
-      // Append the final match as the last round in the Winners' Bracket
+      // Append the final match as the last round
       if (finalMatch) {
         organizedRounds.push(finalMatch);
       }
@@ -129,6 +127,7 @@ const BracketVisualizer = ({ matches, contestantsMap }) => {
         dispatch(fetchMatchesByBracketId(selectedBracket));
       }
 
+      // Update the UI if the final match is created
       if (response.payload?.finalMatchCreated) {
         setFinalMatchCreated(true);
         alert(

@@ -49,7 +49,7 @@ router.post("/matches/declare-winner", async (req, res) => {
   } = req.body;
 
   try {
-    await Matches.handleMatchResult(
+    const finalMatchCreated = await Matches.handleMatchResult(
       db,
       matchId,
       winnerId,
@@ -58,7 +58,11 @@ router.post("/matches/declare-winner", async (req, res) => {
       bracketId,
       roundNumber
     );
-    res.status(200).json({ message: "Match result updated successfully." });
+
+    res.status(200).json({
+      message: "Match result updated successfully.",
+      finalMatchCreated, // Sends final match status to frontend
+    });
   } catch (error) {
     console.error("Error updating match result:", error);
     res.status(500).json({ message: "Failed to update match result." });
