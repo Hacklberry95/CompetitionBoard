@@ -96,7 +96,18 @@ class Matches {
     console.log(
       `Handling result for match ${matchId}: Winner = ${winnerId}, Loser = ${loserId}, Round = ${roundNumber}, isLosersBracket = ${isLosersBracket}`
     );
+
     await Matches.declareWinner(db, matchId, winnerId, loserId);
+
+    // Check if we need to create the final match before placing contestants
+    const finalMatchCreated = await Matches.checkAndCreateFinalMatch(
+      db,
+      bracketId
+    );
+    if (finalMatchCreated) {
+      console.log("Final match created; stopping further match creation.");
+      return; // Stop here to prevent any additional placement after the final match is created
+    }
 
     if (!isLosersBracket) {
       const nextWinnersRound = roundNumber + 1;
@@ -135,12 +146,6 @@ class Matches {
         true
       );
     }
-
-    const finalMatchCreated = await Matches.checkAndCreateFinalMatch(
-      db,
-      bracketId
-    );
-    return finalMatchCreated;
   }
 
   static async placeContestantInMatch(
@@ -150,6 +155,15 @@ class Matches {
     contestantId,
     isLosersBracket
   ) {
+    // Check if the final match has already been created
+    const finalMatchExists = await Matches.findFinalMatch(db, bracketId);
+    if (finalMatchExists) {
+      console.log(
+        "Final match already exists; no further matches will be created."
+      );
+      return; // Exit early to prevent additional matches from being created
+    }
+
     console.log(
       `Placing contestant ${contestantId} in bracket ${bracketId}, round ${roundNumber}, isLosersBracket = ${isLosersBracket}`
     );
@@ -177,9 +191,9 @@ class Matches {
       });
     } else {
       const query = `
-        INSERT INTO Matches (BracketId, RoundNumber, MatchNumber, Participant1Id, isLosersBracket)
-        VALUES (?, ?, (SELECT IFNULL(MAX(MatchNumber), 0) + 1 FROM Matches WHERE BracketId = ? AND RoundNumber = ?), ?, ?);
-      `;
+      INSERT INTO Matches (BracketId, RoundNumber, MatchNumber, Participant1Id, isLosersBracket)
+      VALUES (?, ?, (SELECT IFNULL(MAX(MatchNumber), 0) + 1 FROM Matches WHERE BracketId = ? AND RoundNumber = ?), ?, ?);
+    `;
       return new Promise((resolve, reject) => {
         db.run(
           query,
