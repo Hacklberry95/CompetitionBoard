@@ -207,14 +207,15 @@ class Matches {
 
   static async checkAndCreateFinalMatch(db, bracketId) {
     try {
-      // Check for champions in both brackets
-      const winnersChampionId = await Matches.getChampion(db, bracketId, false);
-      const losersChampionId = await Matches.getChampion(db, bracketId, true);
+      // Calculate maximum rounds based on the number of participants
+      const totalParticipants = await Matches.getTotalParticipants(
+        db,
+        bracketId
+      );
+      const maxWinnersRounds = Math.ceil(Math.log2(totalParticipants)) + 1; // Extra round for final
+      const maxLosersRounds = 2 * (Math.ceil(Math.log2(totalParticipants)) - 1);
 
-      console.log("Winners' Bracket Champion ID:", winnersChampionId);
-      console.log("Losers' Bracket Champion ID:", losersChampionId);
-
-      // Get the last round numbers for each bracket
+      // Get current last round number in each bracket
       const lastWinnersRound = await Matches.getLastRoundNumber(
         db,
         bracketId,
@@ -226,67 +227,98 @@ class Matches {
         true
       );
 
-      // Verify both brackets are at their final match with no future rounds
-      const isWinnersFinalRoundComplete = await Matches.isFinalRound(
-        db,
-        bracketId,
-        lastWinnersRound,
-        false
-      );
-      const isLosersFinalRoundComplete = await Matches.isFinalRound(
-        db,
-        bracketId,
-        lastLosersRound,
-        true
-      );
-
-      // Confirm there are no remaining rounds with unfinished matches in both brackets
-      const noFutureMatchesWinners =
-        !(await Matches.hasUnfinishedMatchesInFutureRounds(
+      // Check if we need to create the final round
+      if (
+        lastWinnersRound === maxWinnersRounds - 1 ||
+        lastLosersRound === maxLosersRounds
+      ) {
+        // Fetch champions or remaining contestants in each bracket
+        const winnersChampionId = await Matches.getChampion(
           db,
           bracketId,
-          lastWinnersRound,
           false
-        ));
-      const noFutureMatchesLosers =
-        !(await Matches.hasUnfinishedMatchesInFutureRounds(
-          db,
-          bracketId,
-          lastLosersRound,
-          true
-        ));
+        );
+        const losersChampionId = await Matches.getChampion(db, bracketId, true);
 
-      // Ensure we only create the final match if both brackets are completely resolved
-      const fullyCompletedBrackets =
-        isWinnersFinalRoundComplete &&
-        isLosersFinalRoundComplete &&
-        noFutureMatchesWinners &&
-        noFutureMatchesLosers;
-
-      if (winnersChampionId && losersChampionId && fullyCompletedBrackets) {
-        const existingFinalMatch = await Matches.findFinalMatch(db, bracketId);
-        if (!existingFinalMatch) {
-          console.log("Creating final championship match...");
+        // Check if a final match already exists
+        let finalMatch = await Matches.findFinalMatch(db, bracketId);
+        if (!finalMatch) {
+          console.log(
+            "Creating final championship match due to round completion."
+          );
           await Matches.createFinalMatch(
             db,
             bracketId,
             winnersChampionId,
             losersChampionId
           );
-          console.log("Final championship match created successfully.");
           return true;
         } else {
-          console.log("Final match already exists.");
+          // If the final match exists but only one participant is filled, add the other
+          if (finalMatch.Participant1Id === null && winnersChampionId) {
+            console.log("Updating final match with winners bracket champion.");
+            await Matches.updateFinalMatchParticipant(
+              db,
+              finalMatch.id,
+              winnersChampionId,
+              "Participant1Id"
+            );
+            return true;
+          } else if (finalMatch.Participant2Id === null && losersChampionId) {
+            console.log("Updating final match with losers bracket champion.");
+            await Matches.updateFinalMatchParticipant(
+              db,
+              finalMatch.id,
+              losersChampionId,
+              "Participant2Id"
+            );
+            return true;
+          }
         }
-      } else {
-        console.log(
-          "Waiting for champions in both brackets and full bracket completion before creating the final match."
-        );
       }
+      console.log("Waiting until one bracket reaches its maximum round count.");
     } catch (error) {
       console.error("Error in checkAndCreateFinalMatch:", error.message);
     }
     return false;
+  }
+  static async getTotalParticipants(db, bracketId) {
+    const query = `SELECT COUNT(*) as totalParticipants FROM BracketEntries WHERE BracketId = ?`;
+    return new Promise((resolve, reject) => {
+      db.get(query, [bracketId], (err, row) => {
+        if (err) {
+          console.error("Error getting total participants:", err.message);
+          reject(err);
+        } else {
+          resolve(row.totalParticipants);
+        }
+      });
+    });
+  }
+
+  static async updateFinalMatchParticipant(
+    db,
+    matchId,
+    participantId,
+    participantField
+  ) {
+    const query = `UPDATE Matches SET ${participantField} = ? WHERE id = ?`;
+    return new Promise((resolve, reject) => {
+      db.run(query, [participantId, matchId], function (err) {
+        if (err) {
+          console.error(
+            `Error updating ${participantField} in final match:`,
+            err.message
+          );
+          reject(err);
+        } else {
+          console.log(
+            `Final match updated: ${participantField} set to ${participantId}`
+          );
+          resolve();
+        }
+      });
+    });
   }
 
   // < ============================== HELPER METHODS ===========================>
@@ -396,6 +428,7 @@ class Matches {
       });
     });
   }
+
   static async findAvailableMatch(db, bracketId, roundNumber, isLosersBracket) {
     const query = `SELECT * FROM Matches WHERE BracketId = ? AND RoundNumber = ? AND isLosersBracket = ? AND (Participant1Id IS NULL OR Participant2Id IS NULL) LIMIT 1;`;
     return new Promise((resolve, reject) => {

@@ -193,12 +193,6 @@ const BracketVisualizer = ({ matches, contestantsMap }) => {
 
       <h3>Losers' Bracket</h3>
       <Bracket rounds={losersRounds} renderSeedComponent={CustomSeed} />
-
-      {finalMatchCreated && (
-        <div className="champion-banner">
-          <h2>Final Match! Determine the Champion!</h2>
-        </div>
-      )}
     </div>
   );
 };
