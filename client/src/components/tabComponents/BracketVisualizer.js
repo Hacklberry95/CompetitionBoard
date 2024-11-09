@@ -48,6 +48,7 @@ const BracketVisualizer = ({ matches, contestantsMap }) => {
     const organizeRounds = (matchesArray) => {
       const organizedRounds = [];
       let finalMatch = null;
+      let lastNonFinalRoundIndex = -1;
 
       matchesArray.forEach((match) => {
         if (match.RoundNumber === 999) {
@@ -73,7 +74,6 @@ const BracketVisualizer = ({ matches, contestantsMap }) => {
               seeds: [],
             };
           }
-
           organizedRounds[roundIndex].seeds.push({
             id: match.id,
             teams: [
@@ -82,8 +82,18 @@ const BracketVisualizer = ({ matches, contestantsMap }) => {
             ],
             match,
           });
+          lastNonFinalRoundIndex = roundIndex;
         }
       });
+
+      // Remove the last non-final round if it contains only a single participant
+      if (
+        finalMatch &&
+        organizedRounds[lastNonFinalRoundIndex] &&
+        organizedRounds[lastNonFinalRoundIndex].seeds.length === 1
+      ) {
+        organizedRounds.splice(lastNonFinalRoundIndex, 1);
+      }
 
       // Append the final match as the last round
       if (finalMatch) {
