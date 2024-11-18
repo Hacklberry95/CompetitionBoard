@@ -1,0 +1,13 @@
+.multilevel-dropdown-menu,
+.multilevel-dropdown-menu li {
+  display: block !important; /* Ensure dropdown is visible */
+}
+
+.multilevel-dropdown-item {
+  color: inherit !important; /* Fix any color conflicts */
+  padding: 5px !important; /* Add spacing for visibility */
+}
+
+.multilevel-dropdown-item:hover {
+  background-color: #f0f0f0; /* Optional: highlight hover */
+}

@@ -60,7 +60,7 @@ h2 {
 
 .dropdown-container {
   margin-left: auto; /* Pushes dropdown to the right */
-  display: flex; /* Align label and dropdown in a row */
+  display: block; /* Align label and dropdown in a row */
   align-items: center; /* Center items vertically */
 }
 
@@ -68,27 +68,6 @@ label {
   margin-right: 10px; /* Space between label and dropdown */
   font-weight: bold; /* Make label text bold */
   color: #555;
-}
-
-#bracket-select {
-  padding: 10px; /* Padding for the dropdown */
-  font-size: 1rem;
-  border-radius: 5px;
-  border: 1px solid #ddd;
-  background-color: #fff;
-  color: #333;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-#bracket-select:focus {
-  border-color: #007bff;
-  outline: none;
-  box-shadow: 0 0 5px rgba(0, 123, 255, 0.5); /* Light shadow on focus */
-}
-
-#bracket-select:hover {
-  cursor: pointer;
-  border-color: #007bff;
 }
 
 .loading-message,

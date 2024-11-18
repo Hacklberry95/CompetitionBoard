@@ -5,6 +5,7 @@ import BracketVisualizer from "../tabComponents/BracketVisualizer";
 import "../../styles/ViewBracketTab.css";
 import { useAlert } from "../../context/AlertContext";
 import ConfirmationDialog from "../helpers/ConfirmationDialog";
+import BracketDropdown from "../helpers/BracketDropDown";
 import {
   deleteAllBrackets,
   clearBrackets,
@@ -128,25 +129,10 @@ const ViewBracketTab = () => {
         <h2>Bracket View</h2>
         {brackets.length > 0 && (
           <div className="dropdown-container">
-            <select
-              id="bracket-select"
-              value={selectedBracket || ""}
-              onChange={(e) => dispatch(setSelectedBracket(e.target.value))}
-            >
-              {brackets.map((bracket) => (
-                <option key={bracket.id} value={bracket.id}>
-                  {bracket.Division} | {bracket.Gender} | {bracket.WeightClass}{" "}
-                  |{" "}
-                  {bracket.Arm === "R"
-                    ? "Right"
-                    : bracket.Arm === "L"
-                    ? "Left"
-                    : bracket.Arm === "B"
-                    ? "Both"
-                    : "N/A"}
-                </option>
-              ))}
-            </select>
+            <BracketDropdown
+              brackets={brackets}
+              selectedBracket={selectedBracket}
+            />
           </div>
         )}
       </div>
